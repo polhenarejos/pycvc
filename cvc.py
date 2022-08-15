@@ -19,6 +19,9 @@
 """
 
 from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
+from cryptography.hazmat.primitives.asymmetric import ec, rsa, padding, utils
+from cryptography.hazmat.primitives import hashes
+import datetime
 
 OID_BSI_DE                      = b"\x04\x00\x7F\x00\x07"
 
@@ -76,6 +79,11 @@ OID_ID_RI_ECDH_SHA_224          = OID_ID_RI_ECDH + b"\x02"
 OID_ID_RI_ECDH_SHA_256          = OID_ID_RI_ECDH + b"\x03"
 
 OID_ID_CI                       = OID_BSI_DE + b"\x02\x02\x06"
+
+OID_ID_ROLES                    = OID_BSI_DE + b"\x03\x01\x02"
+OID_ID_IS                       = OID_ID_ROLES + b"\x01"
+OID_ID_AT                       = OID_ID_ROLES + b"\x02"
+OID_ID_ST                       = OID_ID_ROLES + b"\x03"
 
 
 class SECP192R1:
@@ -175,6 +183,47 @@ class SECP256K1:
     O = bytearray(b"\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFE\xBA\xAE\xDC\xE6\xAF\x48\xA0\x3B\xBF\xD2\x5E\x8C\xD0\x36\x41\x41")
     F = bytearray(b"\x01")
 
+class Type:
+    CVCA = 3
+    DV_domestic = 2
+    DV_foreign = 1
+    Terminal = 0
+    
+    def __init__(self, role):
+        self.role = role
+        
+    def to_bytes(self):
+        x = 0
+        total = len(self._args)
+        for ix, attr in enumerate(self._args):
+            x = x + 2**(total-ix-1) * getattr(self, attr, 0)
+        x = x + self.role * 2**(total)
+        return to_bytes(x)
+
+class TypeIS(Type):
+    OID = OID_ID_IS
+    _args = ('rfu5', 'rfu4', 'rfu3', 'rfu2', 'iris', 'finger')
+    def __init__(self, role, **kwargs):
+        for attr in self._args:
+            setattr(self, attr, kwargs.get(attr, 0))
+        super().__init__(role)
+
+class TypeAT(Type):
+    OID = OID_ID_AT
+    _args = ('write_dg17', 'write_dg18', 'write_dg19', 'write_dg20', 'write_dg21', 'write_dg22', 'rfu31', 'psa', 'read_dg22', 'read_dg21', 'read_dg20', 'read_dg19', 'read_dg18', 'read_dg17', 'read_dg16', 'read_dg15', 'read_dg14', 'read_dg13', 'read_dg12', 'read_dg11', 'read_dg10', 'read_dg9', 'read_dg8', 'read_dg7', 'read_dg6', 'read_dg5', 'read_dg4', 'read_dg3', 'read_dg2', 'read_dg1', 'install_qualified', 'install_cert', 'pin_management', 'can_allowed', 'privileged', 'rid', 'verify_community', 'verify_age')
+    def __init__(self, role, **kwargs):
+        for attr in self._args:
+            setattr(self, attr, kwargs.get(attr, 0))
+        super().__init__(role)
+
+class TypeST(Type):
+    OID = OID_ID_ST
+    _args = ('rfu5', 'rfu4', 'rfu3', 'rfu2', 'gen_qualified', 'gen_sig')
+    def __init__(self, role, **kwargs):
+        for attr in self._args:
+            setattr(self, attr, kwargs.get(attr, 0))
+        super().__init__(role)
+    
 def ec_domain(curve):
     if (curve.name == 'secp192r1'):
         return SECP192R1()
@@ -203,6 +252,8 @@ def ec_domain(curve):
     return None
 
 def to_bytes(n):
+    if (n == 0):
+        return bytearray([0])
     if (isinstance(n, int)):
         return bytearray(n.to_bytes((n.bit_length() + 7) // 8, 'big'))
     return n #Assume is already 
@@ -214,7 +265,7 @@ def tlv_len(size):
     return bytearray([0x80+len(b)]) + b
 
 def add_tag(tag, b):
-    return bytearray(to_bytes(tag)) + tlv_len(len(b)) + b
+    return to_bytes(tag) + tlv_len(len(b)) + b
 
 def asn1_context(tag, n):
     return add_tag(tag, to_bytes(n))
@@ -239,3 +290,53 @@ def cvc_public_key_ecdsa(ecdsa):
     f = add_tag(0x87, dom.F)
     oid = asn1_oid(OID_IT_TA_ECDSA_SHA_256)
     return add_tag(0x7f49, oid + p + a + b + g + o + y + f)
+
+def bcd(s):
+    return bytearray([int(c) for c in s])
+
+def cvc_body(pubkey, car, card_holder, role = None, valid = None, since = None, extensions = None):
+    cpi = add_tag(0x5f29, to_bytes(0))
+    if (isinstance(pubkey, rsa.RSAPublicKey)):
+        pub = cvc_public_key_rsa(pubkey)
+    elif (isinstance(pubkey, ec.EllipticCurvePublicKey)):
+        pub = cvc_public_key_ecdsa(pubkey)
+    car = add_tag(0x42, car)
+    card_holder = add_tag(0x5f20, card_holder)
+    
+    date_since = bytearray()
+    date_until = bytearray()
+    ext = bytearray()
+    chat = bytearray()
+    
+    if (valid != None):
+        if (since == None):
+            since = datetime.datetime.now().strftime("%y%m%d")
+        date_since = add_tag(0x5f25, bcd(since))
+        until = (datetime.datetime.strptime(since, "%y%m%d") + datetime.timedelta(days = valid)).strftime("%y%m%d")
+        date_until = add_tag(0x5f24, bcd(until))
+    
+    if (role != None):
+        oid = asn1_oid(role.OID)
+        app = add_tag(0x53, role.to_bytes())
+        chat = add_tag(0x7f4c, oid + app)
+    return add_tag(0x7f4e, cpi + car + pub + card_holder + chat + date_since + date_until + ext)
+
+def cvc_cert(sign_key, pubkey, car, card_holder, role, valid, since = None):
+    body = cvc_body(pubkey, car, card_holder, role=role, valid=valid, since=since)
+    if (isinstance(sign_key, ec.EllipticCurvePrivateKey)):
+        signature = sign_key.sign(body, ec.ECDSA(hashes.SHA256()))
+        r,s = utils.decode_dss_signature(signature)
+        signature = to_bytes(r) + to_bytes(s)
+    elif (isinstance(sign_key, rsa.RSAPrivateKey)):
+        signature = sign_key.sign(body, padding.PKCS1v15(), hashes.SHA256())
+    signature = add_tag(0x5f37, bytearray(signature))
+    return add_tag(0x7f21, body + signature)
+
+if __name__ == "__main__":
+    from binascii import hexlify
+    priv_key = ec.generate_private_key(ec.SECP192R1())
+    #priv_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    cert = cvc_cert(priv_key, priv_key.public_key(), b"HSMCVCA", b"HSMCVCA", TypeAT(Type.CVCA), 10)
+    print(hexlify(cert))
+    with open("test.cvcert", "wb") as file:
+        file.write(cert)
