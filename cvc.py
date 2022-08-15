@@ -279,7 +279,7 @@ def cvc_public_key_rsa(rsa):
     oid = asn1_oid(OID_ID_TA_RSA_V1_5_SHA_256)
     return add_tag(0x7f49, oid + n + e)
 
-def cvc_public_key_ecdsa(ecdsa):
+def cvc_public_key_ecdsa(ecdsa, full = True):
     dom = ec_domain(ecdsa.public_numbers().curve)
     p = add_tag(0x81, dom.P)
     a = add_tag(0x82, dom.A)
@@ -289,7 +289,9 @@ def cvc_public_key_ecdsa(ecdsa):
     y = add_tag(0x86, ecdsa.public_bytes(Encoding.X962, PublicFormat.UncompressedPoint))
     f = add_tag(0x87, dom.F)
     oid = asn1_oid(OID_IT_TA_ECDSA_SHA_256)
-    return add_tag(0x7f49, oid + p + a + b + g + o + y + f)
+    if (full):
+        return add_tag(0x7f49, oid + p + a + b + g + o + y + f)
+    return add_tag(0x7f49, oid + y)
 
 def bcd(s):
     return bytearray([int(c) for c in s])
@@ -299,7 +301,7 @@ def cvc_body(pubkey, car, card_holder, role = None, valid = None, since = None, 
     if (isinstance(pubkey, rsa.RSAPublicKey)):
         pub = cvc_public_key_rsa(pubkey)
     elif (isinstance(pubkey, ec.EllipticCurvePublicKey)):
-        pub = cvc_public_key_ecdsa(pubkey)
+        pub = cvc_public_key_ecdsa(pubkey, car == card_holder)
     car = add_tag(0x42, car)
     card_holder = add_tag(0x5f20, card_holder)
     
