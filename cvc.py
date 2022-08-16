@@ -28,26 +28,45 @@ from ec_curves import ec_domain
 from asn1 import ASN1
 
 class CVC:
+    __data = None
     def __init__(self):
         self.__a = ASN1()
         
-    def body(self, pubkey, scheme, car, chr, role = None, valid = None, since = None, extensions = None):
+    def decode(self, data):
+        self.__data = data
+        self.__a = ASN1().decode(self.__data)
+        return self
+        
+    def body(self, pubkey = None, scheme = None, car = None, chr = None, role = None, valid = None, since = None, extensions = None):
+        if (self.__data != None):
+            return self.cert().find(0x7f4e)
         self.__a = ASN1().add_tag(0x7f4e, self.cpi().car(car).pubkey(pubkey, scheme, car == chr).chr(chr).role(role).valid(valid, since).encode())
         return self
     
-    def car(self, car):
+    def car(self, car = None):
+        if (self.__data != None):
+            return self.body().find(0x42).data()
         self.__a = self.__a.add_tag(0x42, car)
         return self
     
-    def chr(self, chr):
+    def outer_car(self):
+        return self.req().find(0x42).data()
+    
+    def chr(self, chr = None):
+        if (self.__data != None):
+            return self.body().find(0x5f20).data()
         self.__a = self.__a.add_tag(0x5f20, chr)
         return self
     
     def cpi(self, val = 0):
+        if (self.__data != None):
+            return self.body().find(0x5f29).data()
         self.__a = self.__a.add_tag(0x5f29, to_bytes(val))
         return self
         
-    def pubkey(self, pubkey, scheme, full):
+    def pubkey(self, pubkey = None, scheme = None, full = None):
+        if (self.__data != None):
+            return self.body().find(0x7f49)
         if (isinstance(pubkey, rsa.RSAPublicKey)):
             pubctx = [pubkey.public_numbers().n, pubkey.public_numbers().e]
         elif (isinstance(pubkey, ec.EllipticCurvePublicKey)):
@@ -60,12 +79,16 @@ class CVC:
         self.__a = self.__a.add_object(0x7f49, scheme, pubctx)
         return self
     
-    def role(self, role):
+    def role(self, role = None):
+        if (self.__data != None):
+            return self.body().find(0x7f4c)
         if (role != None):
             self.__a = self.__a.add_tag(0x7f4c, ASN1().add_oid(role.OID).add_tag(0x53, role.to_bytes()).encode())
         return self
     
-    def valid(self, valid, since = None):
+    def valid(self, valid = None, since = None):
+        if (self.__data != None):
+            return self.body().find(0x5f24).data()
         if (valid != None):
             if (since == None):
                 since = datetime.datetime.now().strftime("%y%m%d")
@@ -73,6 +96,14 @@ class CVC:
             self.__a = self.__a.add_tag(0x5f25, bcd(since)).add_tag(0x5f24, bcd(until))
         return self
     
+    def signature(self):
+        if (self.__data != None):
+            return self.cert().find(0x5f37).data()
+        
+    def outer_signature(self):
+        if (self.__data != None):
+            return self.req().find(0x5f37).data()
+        
     def sign(self, key, scheme):
         if (scheme == oid.ID_TA_ECDSA_SHA_1 or scheme == oid.ID_TA_RSA_PSS_SHA_1 or scheme == oid.ID_TA_RSA_V1_5_SHA_1):
             h = hashes.SHA1()
@@ -97,11 +128,18 @@ class CVC:
         self.__a = self.__a.add_tag(0x5f37, bytearray(signature))
         return self
 
-    def cert(self, pubkey, scheme, signkey, signscheme, car, chr, role, valid, since = None, extensions = None):
+    def cert(self, pubkey = None, scheme = None, signkey = None, signscheme = None, car = None, chr = None, role = None, valid = None, since = None, extensions = None):
+        if (self.__data != None):
+            return self.req().find(0x7f21)
         self.__a = ASN1().add_tag(0x7f21, self.body(pubkey, scheme, car, chr, role, valid, since, extensions).sign(signkey, signscheme).encode())
         return self
     
-    def req(self, pubkey, scheme, signkey, signscheme, car, chr, outercar = None, outerkey = None, outerscheme = None, extensions = None):
+    def req(self, pubkey = None, scheme = None, signkey = None, signscheme = None, car = None, chr = None, outercar = None, outerkey = None, outerscheme = None, extensions = None):
+        if (self.__data != None):
+            aut = self.__a.find(0x67)
+            if (aut):
+                return aut
+            return self.__a
         cert = self.cert(pubkey, scheme, signkey, signscheme, car, chr, role=None, valid=None, since=None, extensions=extensions)
         if (outercar != None and outerkey != None and outerscheme != None):
             self.__a = ASN1().add_tag(0x67, cert.car(outercar).sign(outerkey, outerscheme).encode())
