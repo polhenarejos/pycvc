@@ -53,11 +53,11 @@ ID_TA_RSA_PSS_SHA_512       = ID_TA_RSA + b"\x06"
 
 ID_TA_ECDSA                 = ID_TA + b"\x02"
 
-IT_TA_ECDSA_SHA_1           = ID_TA_ECDSA + b"\x01"
-IT_TA_ECDSA_SHA_224         = ID_TA_ECDSA + b"\x02"
-IT_TA_ECDSA_SHA_256         = ID_TA_ECDSA + b"\x03"
-IT_TA_ECDSA_SHA_384         = ID_TA_ECDSA + b"\x04"
-IT_TA_ECDSA_SHA_512         = ID_TA_ECDSA + b"\x05"
+ID_TA_ECDSA_SHA_1           = ID_TA_ECDSA + b"\x01"
+ID_TA_ECDSA_SHA_224         = ID_TA_ECDSA + b"\x02"
+ID_TA_ECDSA_SHA_256         = ID_TA_ECDSA + b"\x03"
+ID_TA_ECDSA_SHA_384         = ID_TA_ECDSA + b"\x04"
+ID_TA_ECDSA_SHA_512         = ID_TA_ECDSA + b"\x05"
 
 ID_RI                       = BSI_DE + b"\x02\x02\x05"
 
