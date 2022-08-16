@@ -37,6 +37,8 @@ def parse_args():
     parser.add_argument('--valid', help='Days of validity since today or date provided by --since', default=90)
     parser.add_argument('-k','--sign-key', help='Private key to sign the certificate.', required=True, metavar='FILENAME')
     parser.add_argument('--sign-as', help='CV certificate of signing entity. If not provided, the certificate is self-signed', metavar='FILENAME')
+    parser.add_argument('--outer-as', help='CV certificate for outer signature', metavar='FILENAME')
+    parser.add_argument('--outer-key', help='Private key for outer signature', metavar='FILENAME')
     parser.add_argument('-p','--public-key', help='The public key contained in the certificate. If not provided, it is derived from the sign-key', metavar='FILENAME')
     parser.add_argument('--out-key', help='File to store the generated private key', metavar='FILENAME')
     parser.add_argument('-s','--scheme', help='Signature scheme', choices=["ECDSA_SHA_1",
@@ -188,12 +190,26 @@ def main(args):
             cadata = f.read()
             car = CVC().decode(cadata).car()
             signscheme = CVC().decode(cadata).pubkey().oid()
-            
     else:
          car = args.chr.encode()
          signscheme = puboid
-
-    cert = CVC().cert(pub_key, puboid, sign_key, signscheme, car=car, chr=args.chr.encode(), role=typ, valid=args.valid if typ else None)
+    outercar = None
+    outerkey = None
+    outerscheme = None
+    if (args.outer_as and args.outer_key):
+        with open(args.outer_as, 'rb') as f:
+            cadata = f.read()
+            outercar = CVC().decode(cadata).car()
+            outerscheme = CVC().decode(cadata).pubkey().oid()
+        with open(args.outer_key, 'rb') as f:
+            p8data = f.read()
+            try:
+                outerkey = serialization.load_der_private_key(p8data,password=None)
+            except ValueError:
+                outerkey = serialization.load_pem_private_key(p8data,password=None)
+        cert = CVC().req(pub_key, puboid, sign_key, signscheme, car=args.chr.encode(), chr=args.chr.encode(), outercar=outercar, outerkey=outerkey, outerscheme=outerscheme)
+    else:
+        cert = CVC().cert(pub_key, puboid, sign_key, signscheme, car=car, chr=args.chr.encode(), role=typ, valid=args.valid if typ else None)
     
     with open(args.out_cert if args.out_cert != None else args.chr+'.cvcert','wb') as f:
         f.write(cert.encode())
