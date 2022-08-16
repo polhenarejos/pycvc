@@ -106,3 +106,6 @@ class ASN1:
     
     def data(self):
         return self._buffer
+    
+    def oid(self):
+        return self.find(0x6).data()
