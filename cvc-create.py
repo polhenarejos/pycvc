@@ -31,8 +31,8 @@ logger = logging.getLogger(__name__)
 def parse_args():
     parser = argparse.ArgumentParser(description='Generate a Card Verifiable Certificate')
     parser.add_argument('-o','--out-cert', help='Generated certificate file', metavar='FILENAME')
-    parser.add_argument('-r','--role', help='The role of entity', choices=['cvca','dv_domestic','dv_foreign','terminal'], required=True)
-    parser.add_argument('-t','--type', help='The type of terminal', choices=['at','is','st'], required=True)    
+    parser.add_argument('-r','--role', help='The role of entity', choices=['cvca','dv_domestic','dv_foreign','terminal'])
+    parser.add_argument('-t','--type', help='The type of terminal. If not provided, it creates a certificate request', choices=['at','is','st'])    
     parser.add_argument('--chat', help='Raw Card Holder Authorization Template')
     parser.add_argument('--valid', help='Days of validity since today or date provided by --since', default=90)
     parser.add_argument('-k','--sign-key', help='Private key to sign the certificate.', required=True, metavar='FILENAME')
@@ -115,7 +115,7 @@ def main(args):
             except ValueError:
                 pub_key = serialization.load_pem_public_key(pubdata)
     else:
-        if (args.sign_as):            
+        if (args.sign_as and args.type):            
             if (isinstance(sign_key, rsa.RSAPrivateKey)):
                 priv_key = rsa.generate_private_key(key_size=sign_key.key_size, public_exponent=65537)
             elif (isinstance(sign_key, ec.EllipticCurvePrivateKey)):
@@ -141,7 +141,7 @@ def main(args):
     elif (args.role == 'terminal'):
         role = Type.Terminal
         
-    typ = TypeAT(role)
+    typ = None
     if (args.type == 'at'):
         typ = TypeAT(role)
         for attr in TypeAT._args:
@@ -183,17 +183,17 @@ def main(args):
         elif (isinstance(pub_key, ec.EllipticCurvePublicKey)):
             puboid = oid.ID_TA_ECDSA_SHA_256
             
-    if (args.sign_as):
+    if (args.sign_as and typ):
         with open(args.sign_as, 'rb') as f:
             cadata = f.read()
             car = CVC().decode(cadata).car()
             signscheme = CVC().decode(cadata).pubkey().oid()
             
     else:
-         car = args.chr
+         car = args.chr.encode()
          signscheme = puboid
-    
-    cert = CVC().cert(pub_key, puboid, sign_key, signscheme, car=car, chr=args.chr.encode(), role=typ, valid=args.valid)
+
+    cert = CVC().cert(pub_key, puboid, sign_key, signscheme, car=car, chr=args.chr.encode(), role=typ, valid=args.valid if typ else None)
     
     with open(args.out_cert if args.out_cert != None else args.chr+'.cvcert','wb') as f:
         f.write(cert.encode())
