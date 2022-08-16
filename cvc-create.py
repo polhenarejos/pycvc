@@ -1,0 +1,197 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+/* 
+ * This file is part of the pyCVC distribution (https://github.com/polhenarejos/pycvc).
+ * Copyright (c) 2022 Pol Henarejos.
+ * 
+ * This program is free software: you can redistribute it and/or modify  
+ * it under the terms of the GNU General Public License as published by  
+ * the Free Software Foundation, version 3.
+ *
+ * This program is distributed in the hope that it will be useful, but 
+ * WITHOUT ANY WARRANTY; without even the implied warranty of 
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU 
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License 
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+"""
+
+import argparse, logging, sys
+from cryptography.hazmat.primitives.asymmetric import ec, rsa
+from cryptography.hazmat.primitives import serialization
+from terminal import Type, TypeIS, TypeAT, TypeST
+from cvc import CVC
+import oid
+
+logger = logging.getLogger(__name__)   
+
+def parse_args():
+    parser = argparse.ArgumentParser(description='Generate a Card Verifiable Certificate')
+    parser.add_argument('-o','--out-cert', help='Generated certificate file', metavar='FILENAME')
+    parser.add_argument('-r','--role', help='The role of entity', choices=['cvca','dv_domestic','dv_foreign','terminal'], required=True)
+    parser.add_argument('-t','--type', help='The type of terminal', choices=['at','is','st'], required=True)    
+    parser.add_argument('--chat', help='Raw Card Holder Authorization Template')
+    parser.add_argument('--valid', help='Days of validity since today or date provided by --since', default=90)
+    parser.add_argument('-k','--sign-key', help='Private key to sign the certificate.', required=True, metavar='FILENAME')
+    parser.add_argument('-a', '--car', help='Certificate Authorization Reference. If not provided, the certificate is self-signed', metavar='FILENAME')
+    parser.add_argument('-p','--public-key', help='The public key contained in the certificate. If not provided, it is derived from the sign-key', metavar='FILENAME')
+    parser.add_argument('--out-key', help='File to store the generated private key', metavar='FILENAME')
+    parser.add_argument('-s','--scheme', help='Signature scheme', choices=["ECDSA_SHA_1",
+                               "ECDSA_SHA_224", "ECDSA_SHA_256",
+                               "ECDSA_SHA_384", "ECDSA_SHA_512",
+                               "RSA_v1_5_SHA_1", "RSA_v1_5_SHA_256",
+                               "RSA_v1_5_SHA_512", "RSA_PSS_SHA_1",
+                               "RSA_PSS_SHA_256", "RSA_PSS_SHA_512"])
+    parser.add_argument('-c','--chr', help='Certificate Holder Reference', required=True)
+    parser.add_argument('--write-dg17', help='Allow writing DG 17 (Normal Place of Residence)', action='store_true')
+    parser.add_argument('--write-dg18', help='Allow writing DG 18 (Community ID)', action='store_true')
+    parser.add_argument('--write-dg19', help='Allow writing DG 19 (Residence Permit I)', action='store_true')
+    parser.add_argument('--write-dg20', help='Allow writing DG 20 (Residence Permit II)', action='store_true')
+    parser.add_argument('--write-dg21', help='Allow writing DG 21 (Optional Data)', action='store_true')
+    parser.add_argument('--write-dg22', help='Allow writing DG 22 (Email address)', action='store_true')
+    parser.add_argument('--rfu31', help='Allow RFU R/W Access bit 31', action='store_true')
+    parser.add_argument('--psa', help='Allow PSA', action='store_true')
+    parser.add_argument('--read-dg22', help='Allow reading DG 22 (Email address)', action='store_true')
+    parser.add_argument('--read-dg1', help='Allow reading DG 1   (Document Type)', action='store_true')
+    parser.add_argument('--read-dg2', help='Allow reading DG 2   (Issuing State)', action='store_true')
+    parser.add_argument('--read-dg3', help='Allow reading DG 3   (Date of Expiry)', action='store_true')
+    parser.add_argument('--read-dg4', help='Allow reading DG 4   (Given Names)', action='store_true')
+    parser.add_argument('--read-dg5', help='Allow reading DG 5   (Family Names)', action='store_true')
+    parser.add_argument('--read-dg6', help='Allow reading DG 6   (Religious/Artistic Name)', action='store_true')
+    parser.add_argument('--read-dg7', help='Allow reading DG 7   (Academic Title)', action='store_true')
+    parser.add_argument('--read-dg8', help='Allow reading DG 8   (Date of Birth)', action='store_true')
+    parser.add_argument('--read-dg9', help='Allow reading DG 9   (Place of Birth)', action='store_true')
+    parser.add_argument('--read-dg10', help='Allow reading DG 10  (Nationality)', action='store_true')
+    parser.add_argument('--read-dg11', help='Allow reading DG 11  (Sex)', action='store_true')
+    parser.add_argument('--read-dg12', help='Allow reading DG 12  (Optional Data)', action='store_true')
+    parser.add_argument('--read-dg13', help='Allow reading DG 13', action='store_true')
+    parser.add_argument('--read-dg14', help='Allow reading DG 14', action='store_true')
+    parser.add_argument('--read-dg15', help='Allow reading DG 15', action='store_true')
+    parser.add_argument('--read-dg16', help='Allow reading DG 16', action='store_true')
+    parser.add_argument('--read-dg17', help='Allow reading DG 17  (Normal Place of Residence)', action='store_true')
+    parser.add_argument('--read-dg18', help='Allow reading DG 18  (Community ID)', action='store_true')
+    parser.add_argument('--read-dg19', help='Allow reading DG 19  (Residence Permit I)', action='store_true')
+    parser.add_argument('--read-dg20', help='Allow reading DG 20  (Residence Permit II)', action='store_true')
+    parser.add_argument('--read-dg21', help='Allow reading DG 21  (Optional Data)', action='store_true')
+    parser.add_argument('--install-qual-cert', help='Allow installing qualified certificate', action='store_true')
+    parser.add_argument('--install-cert', help='Allow installing certificate', action='store_true')
+    parser.add_argument('--pin-management ', help='Allow PIN management', action='store_true')
+    parser.add_argument('--can-allowed', help='CAN allowed', action='store_true')
+    parser.add_argument('--privileged ', help='Privileged terminal', action='store_true')
+    parser.add_argument('--rid', help='Allow restricted identification', action='store_true')
+    parser.add_argument('--verify-community', help='Allow community ID verification', action='store_true')
+    parser.add_argument('--verify-age', help='Allow age verification', action='store_true')
+    
+    parser.add_argument('--rfu5', help='Allow RFU bit 5', action='store_true')
+    parser.add_argument('--rfu4', help='Allow RFU bit 4', action='store_true')
+    parser.add_argument('--rfu3', help='Allow RFU bit 3', action='store_true')
+    parser.add_argument('--rfu2', help='Allow RFU bit 2', action='store_true')
+    parser.add_argument('--gen-qual-sig', help='Allow generated qualified electronic signature', action='store_true')
+    parser.add_argument('--gen-sig', help='Allow generated electronic signature', action='store_true')
+    
+    
+    parser.add_argument('--read-iris', help='Read access to ePassport application: DG 4 (Iris)', action='store_true')
+    parser.add_argument('--read-finger', help='Read access to ePassport application: DG 3 (Fingerprint)', action='store_true')
+
+    args = parser.parse_args()
+    
+    return args
+
+def main(args):
+    with open(args.sign_key, 'rb') as f:
+        p8data = f.read()
+        try:
+            sign_key = serialization.load_der_private_key(p8data,password=None)
+        except ValueError:
+            sign_key = serialization.load_pem_private_key(p8data,password=None)
+    if (args.public_key):
+        with open(args.public_key, 'rb') as f:
+            pubdata = f.read()
+            try:
+                pub_key = serialization.load_der_public_key(pubdata)
+            except ValueError:
+                pub_key = serialization.load_pem_public_key(pubdata)
+    else:
+        if (args.car and args.car != args.chr): #not self-signed
+            if (isinstance(sign_key, rsa.RSAPrivateKey)):
+                priv_key = rsa.generate_private_key(key_size=sign_key.key_size, public_exponent=65537)
+            elif (isinstance(sign_key, ec.EllipticCurvePrivateKey)):
+                priv_key = ec.generate_private_key(sign_key.curve)
+            pub_key = priv_key.public_key()
+            car = args.car
+            with open(args.out_key if args.out_key != None else args.chr+'.pkcs8','wb') as f:
+                der = priv_key.private_bytes(
+                   encoding=serialization.Encoding.DER,
+                   format=serialization.PrivateFormat.PKCS8,
+                   encryption_algorithm=serialization.NoEncryption()
+                )
+                f.write(der)
+        else:
+            pub_key = sign_key.public_key()
+            car = args.chr
+    
+
+    role = Type.CVCA
+    if (args.role == 'cvca'):
+        role = Type.CVCA
+    elif (args.role == 'dv_domestic'):
+        role = Type.DV_domestic
+    elif (args.role == 'dv_foreign'):
+        role = Type.dv_foreign
+    elif (args.role == 'terminal'):
+        role = Type.Terminal
+        
+    typ = TypeAT(role)
+    if (args.type == 'at'):
+        typ = TypeAT(role)
+        for attr in TypeAT._args:
+            setattr(typ, attr, getattr(args, attr, 0))
+    elif (args.type == 'st'):
+        typ = TypeST(role)
+        for attr in TypeST._args:
+            setattr(typ, attr, getattr(args, attr, 0))
+    elif (args.type == 'is'):
+        typ = TypeIS(role)
+        for attr in TypeIS._args:
+            setattr(typ, attr, getattr(args, attr, 0))
+            
+    if (args.scheme == 'ECDSA_SHA_1'):
+        puboid = oid.ID_TA_ECDSA_SHA_1
+    elif (args.scheme == 'ECDSA_SHA_224'):
+        puboid = oid.ID_TA_ECDSA_SHA_224
+    elif (args.scheme == 'ECDSA_SHA_256'):
+        puboid = oid.ID_TA_ECDSA_SHA_256
+    elif (args.scheme == 'ECDSA_SHA_384'):
+        puboid = oid.ID_TA_ECDSA_SHA_384
+    elif (args.scheme == 'ECDSA_SHA_512'):
+        puboid = oid.ID_TA_ECDSA_SHA_512
+    elif (args.scheme == 'RSA_v1_5_SHA_1'):
+        puboid = oid.ID_TA_RSA_V1_5_SHA_1
+    elif (args.scheme == 'RSA_v1_5_SHA_256'):
+        puboid = oid.ID_TA_RSA_V1_5_SHA_256
+    elif (args.scheme == 'RSA_v1_5_SHA_512'):
+        puboid = oid.ID_TA_RSA_V1_5_SHA_512
+    elif (args.scheme == 'RSA_PSS_SHA_1'):
+        puboid = oid.ID_TA_RSA_PSS_SHA_1
+    elif (args.scheme == 'RSA_PSS_SHA_256'):
+        puboid = oid.ID_TA_RSA_PSS_SHA_256
+    elif (args.scheme == 'RSA_PSS_SHA_512'):
+        puboid = oid.ID_TA_RSA_PSS_SHA_512
+    else:
+        if (isinstance(pub_key, rsa.RSAPublicKey)):
+            puboid = oid.ID_TA_RSA_PSS_SHA256
+        elif (isinstance(pub_key, ec.EllipticCurvePublicKey)):
+            puboid = oid.ID_TA_ECDSA_SHA_256
+    
+    cert = CVC().cert(pub_key, puboid, sign_key, car=car.encode(), chr=args.chr.encode(), role=typ, valid=args.valid)
+    
+    with open(args.out_cert if args.out_cert != None else args.chr+'.cvcert','wb') as f:
+        f.write(cert.encode())
+    
+if __name__ == "__main__":
+    args = parse_args()
+    main(args)
+    
