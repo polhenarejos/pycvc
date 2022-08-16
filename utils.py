@@ -18,6 +18,8 @@
  */
 """
 
+import oid
+
 def to_bytes(n):
     if (n == 0):
         return bytearray([0])
@@ -27,3 +29,14 @@ def to_bytes(n):
 
 def bcd(s):
     return bytearray([int(c) for c in s])
+
+def scheme_rsa(o):
+    return (o == oid.ID_TA_RSA_V1_5_SHA_1 or o == oid.ID_TA_RSA_V1_5_SHA_256 or o == oid.ID_TA_RSA_V1_5_SHA_512 or
+        o == oid.ID_TA_RSA_PSS_SHA_1 or o == oid.ID_TA_RSA_PSS_SHA_256 or o == oid.ID_TA_RSA_PSS_SHA_512)
+
+def scheme_ecdsa(o):
+    return (o == oid.ID_TA_ECDSA_SHA_1 or o == oid.ID_TA_ECDSA_SHA_224 or o == oid.ID_TA_ECDSA_SHA_256 or 
+            o == oid.ID_TA_ECDSA_SHA_384 or o == oid.ID_TA_ECDSA_SHA_512)
+
+def from_bcd(c):
+    return ''.join([str(s) for s in c])

@@ -19,7 +19,7 @@
  */
 """
 
-import argparse, logging, sys
+import argparse, logging
 from cryptography.hazmat.primitives.asymmetric import ec, rsa
 from cryptography.hazmat.primitives import serialization
 from terminal import Type, TypeIS, TypeAT, TypeST
@@ -40,7 +40,7 @@ def parse_args():
     parser.add_argument('--outer-as', help='CV certificate for outer signature', metavar='FILENAME')
     parser.add_argument('--outer-key', help='Private key for outer signature', metavar='FILENAME')
     parser.add_argument('-p','--public-key', help='The public key contained in the certificate. If not provided, it is derived from the sign-key', metavar='FILENAME')
-    parser.add_argument('--out-key', help='File to store the generated private key', metavar='FILENAME')
+    parser.add_argument('--out-key', help='File to store the generated private key [default CHR.pkcs8]', metavar='FILENAME')
     parser.add_argument('-s','--scheme', help='Signature scheme', choices=["ECDSA_SHA_1",
                                "ECDSA_SHA_224", "ECDSA_SHA_256",
                                "ECDSA_SHA_384", "ECDSA_SHA_512",
@@ -94,7 +94,6 @@ def parse_args():
     parser.add_argument('--gen-qual-sig', help='Allow generated qualified electronic signature', action='store_true')
     parser.add_argument('--gen-sig', help='Allow generated electronic signature', action='store_true')
     
-    
     parser.add_argument('--read-iris', help='Read access to ePassport application: DG 4 (Iris)', action='store_true')
     parser.add_argument('--read-finger', help='Read access to ePassport application: DG 3 (Fingerprint)', action='store_true')
 
@@ -136,31 +135,6 @@ def get_type(t, role):
         setattr(typ, attr, getattr(args, attr, 0))
         
     return typ
-
-def get_puboid(scheme):
-    if (scheme == 'ECDSA_SHA_1'):
-        return oid.ID_TA_ECDSA_SHA_1
-    elif (scheme == 'ECDSA_SHA_224'):
-        return oid.ID_TA_ECDSA_SHA_224
-    elif (scheme == 'ECDSA_SHA_256'):
-        return oid.ID_TA_ECDSA_SHA_256
-    elif (scheme == 'ECDSA_SHA_384'):
-        return oid.ID_TA_ECDSA_SHA_384
-    elif (scheme == 'ECDSA_SHA_512'):
-        return oid.ID_TA_ECDSA_SHA_512
-    elif (scheme == 'RSA_v1_5_SHA_1'):
-        return oid.ID_TA_RSA_V1_5_SHA_1
-    elif (scheme == 'RSA_v1_5_SHA_256'):
-        return oid.ID_TA_RSA_V1_5_SHA_256
-    elif (scheme == 'RSA_v1_5_SHA_512'):
-        return oid.ID_TA_RSA_V1_5_SHA_512
-    elif (scheme == 'RSA_PSS_SHA_1'):
-        return oid.ID_TA_RSA_PSS_SHA_1
-    elif (scheme == 'RSA_PSS_SHA_256'):
-        return oid.ID_TA_RSA_PSS_SHA_256
-    elif (scheme == 'RSA_PSS_SHA_512'):
-        return oid.ID_TA_RSA_PSS_SHA_512
-    return None
         
 def parse_as(a):
     with open(a, 'rb') as f:
@@ -196,7 +170,7 @@ def main(args):
         
     typ = get_type(args.type, role)
     
-    puboid = get_puboid(args.scheme)
+    puboid = oid.scheme2oid(args.scheme)
     if (not puboid):
         if (isinstance(pub_key, rsa.RSAPublicKey)):
             puboid = oid.ID_TA_RSA_PSS_SHA256

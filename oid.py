@@ -80,3 +80,28 @@ ID_IS                       = ID_ROLES + b"\x01"
 ID_AT                       = ID_ROLES + b"\x02"
 ID_ST                       = ID_ROLES + b"\x03"
 
+schemes = [
+    ('ECDSA_SHA_1', ID_TA_ECDSA_SHA_1),
+    ('ECDSA_SHA_224', ID_TA_ECDSA_SHA_224),
+    ('ECDSA_SHA_256', ID_TA_ECDSA_SHA_256),
+    ('ECDSA_SHA_384', ID_TA_ECDSA_SHA_384),
+    ('ECDSA_SHA_512', ID_TA_ECDSA_SHA_512),
+    ('RSA_v1_5_SHA_1', ID_TA_RSA_V1_5_SHA_1),
+    ('RSA_v1_5_SHA_256', ID_TA_RSA_V1_5_SHA_256),
+    ('RSA_v1_5_SHA_512', ID_TA_RSA_V1_5_SHA_512),
+    ('RSA_PSS_SHA_1', ID_TA_RSA_PSS_SHA_1),
+    ('RSA_PSS_SHA_256', ID_TA_RSA_PSS_SHA_256),
+    ('RSA_PSS_SHA_512', ID_TA_RSA_PSS_SHA_512),
+    ]
+
+def scheme2oid(scheme):
+    for s,o in schemes:
+        if (s == scheme):
+            return o
+    return None
+
+def oid2scheme(oid):
+    for s,o in schemes:
+        if (o == oid):
+            return s
+    return None

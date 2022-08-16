@@ -88,7 +88,7 @@ class CVC:
     
     def valid(self, valid = None, since = None):
         if (self.__data != None):
-            return self.body().find(0x5f24).data()
+            return self.body().find(0x5f25).data()
         if (valid != None):
             if (since == None):
                 since = datetime.datetime.now().strftime("%y%m%d")
@@ -96,6 +96,9 @@ class CVC:
             self.__a = self.__a.add_tag(0x5f25, bcd(since)).add_tag(0x5f24, bcd(until))
         return self
     
+    def expires(self):
+        return self.body().find(0x5f24).data()
+        
     def signature(self):
         if (self.__data != None):
             return self.cert().find(0x5f37).data()
