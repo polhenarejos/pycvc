@@ -54,7 +54,9 @@ class ASN1:
         
     def add_context(self, b):
         self._context_counter = self._context_counter + 1
-        return self.add_tag(ASN1._TAG_CONTEXT + self._context_counter, b)
+        if (b != None):
+            return self.add_tag(ASN1._TAG_CONTEXT + self._context_counter, b)
+        return self
     
     def add_oid(self, b):
         return self.add_tag(ASN1._TAG_OID, b)
