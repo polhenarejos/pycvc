@@ -36,7 +36,7 @@ def parse_args():
     parser.add_argument('--chat', help='Raw Card Holder Authorization Template')
     parser.add_argument('--valid', help='Days of validity since today or date provided by --since', default=90)
     parser.add_argument('-k','--sign-key', help='Private key to sign the certificate.', required=True, metavar='FILENAME')
-    parser.add_argument('-a', '--car', help='Certificate Authorization Reference. If not provided, the certificate is self-signed', metavar='FILENAME')
+    parser.add_argument('--sign-as', help='CV certificate of signing entity. If not provided, the certificate is self-signed', metavar='FILENAME')
     parser.add_argument('-p','--public-key', help='The public key contained in the certificate. If not provided, it is derived from the sign-key', metavar='FILENAME')
     parser.add_argument('--out-key', help='File to store the generated private key', metavar='FILENAME')
     parser.add_argument('-s','--scheme', help='Signature scheme', choices=["ECDSA_SHA_1",
@@ -115,13 +115,12 @@ def main(args):
             except ValueError:
                 pub_key = serialization.load_pem_public_key(pubdata)
     else:
-        if (args.car and args.car != args.chr): #not self-signed
+        if (args.sign_as):            
             if (isinstance(sign_key, rsa.RSAPrivateKey)):
                 priv_key = rsa.generate_private_key(key_size=sign_key.key_size, public_exponent=65537)
             elif (isinstance(sign_key, ec.EllipticCurvePrivateKey)):
                 priv_key = ec.generate_private_key(sign_key.curve)
             pub_key = priv_key.public_key()
-            car = args.car
             with open(args.out_key if args.out_key != None else args.chr+'.pkcs8','wb') as f:
                 der = priv_key.private_bytes(
                    encoding=serialization.Encoding.DER,
@@ -131,9 +130,7 @@ def main(args):
                 f.write(der)
         else:
             pub_key = sign_key.public_key()
-            car = args.chr
     
-
     role = Type.CVCA
     if (args.role == 'cvca'):
         role = Type.CVCA
@@ -185,8 +182,18 @@ def main(args):
             puboid = oid.ID_TA_RSA_PSS_SHA256
         elif (isinstance(pub_key, ec.EllipticCurvePublicKey)):
             puboid = oid.ID_TA_ECDSA_SHA_256
+            
+    if (args.sign_as):
+        with open(args.sign_as, 'rb') as f:
+            cadata = f.read()
+            car = CVC().decode(cadata).car()
+            signscheme = CVC().decode(cadata).pubkey().oid()
+            
+    else:
+         car = args.chr
+         signscheme = puboid
     
-    cert = CVC().cert(pub_key, puboid, sign_key, puboid, car=car.encode(), chr=args.chr.encode(), role=typ, valid=args.valid)
+    cert = CVC().cert(pub_key, puboid, sign_key, signscheme, car=car, chr=args.chr.encode(), role=typ, valid=args.valid)
     
     with open(args.out_cert if args.out_cert != None else args.chr+'.cvcert','wb') as f:
         f.write(cert.encode())
