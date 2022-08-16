@@ -74,7 +74,6 @@ class CVC:
         return self
     
     def sign(self, key, scheme):
-        
         if (scheme == oid.ID_TA_ECDSA_SHA_1 or scheme == oid.ID_TA_RSA_PSS_SHA_1 or scheme == oid.ID_TA_RSA_V1_5_SHA_1):
             h = hashes.SHA1()
         elif (scheme == oid.ID_TA_ECDSA_SHA_224):
@@ -98,14 +97,14 @@ class CVC:
         self.__a = self.__a.add_tag(0x5f37, bytearray(signature))
         return self
 
-    def cert(self, pubkey, scheme, signkey, car, chr, role, valid, since = None, extensions = None):
-        self.__a = ASN1().add_tag(0x7f21, self.body(pubkey, scheme, car, chr, role, valid, since, extensions).sign(signkey, scheme).encode())
+    def cert(self, pubkey, scheme, signkey, signscheme, car, chr, role, valid, since = None, extensions = None):
+        self.__a = ASN1().add_tag(0x7f21, self.body(pubkey, scheme, car, chr, role, valid, since, extensions).sign(signkey, signscheme).encode())
         return self
     
-    def req(self, pubkey, scheme, signkey, car, chr, outercar = None, outerkey = None, extensions = None):
-        cert = self.cert(pubkey, scheme, signkey, car, chr, role=None, valid=None, since=None, extensions=extensions)
-        if (outercar != None and outerkey != None):
-            self.__a = ASN1().add_tag(0x67, cert.car(outercar).sign(outerkey).encode())
+    def req(self, pubkey, scheme, signkey, signscheme, car, chr, outercar = None, outerkey = None, outerscheme = None, extensions = None):
+        cert = self.cert(pubkey, scheme, signkey, signscheme, car, chr, role=None, valid=None, since=None, extensions=extensions)
+        if (outercar != None and outerkey != None and outerscheme != None):
+            self.__a = ASN1().add_tag(0x67, cert.car(outercar).sign(outerkey, outerscheme).encode())
         return self
     
     def encode(self):

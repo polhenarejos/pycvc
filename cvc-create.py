@@ -186,7 +186,7 @@ def main(args):
         elif (isinstance(pub_key, ec.EllipticCurvePublicKey)):
             puboid = oid.ID_TA_ECDSA_SHA_256
     
-    cert = CVC().cert(pub_key, puboid, sign_key, car=car.encode(), chr=args.chr.encode(), role=typ, valid=args.valid)
+    cert = CVC().cert(pub_key, puboid, sign_key, puboid, car=car.encode(), chr=args.chr.encode(), role=typ, valid=args.valid)
     
     with open(args.out_cert if args.out_cert != None else args.chr+'.cvcert','wb') as f:
         f.write(cert.encode())
