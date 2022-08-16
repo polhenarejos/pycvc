@@ -102,13 +102,76 @@ def parse_args():
     
     return args
 
-def main(args):
-    with open(args.sign_key, 'rb') as f:
+def load_private_key(filename):
+    with open(filename, 'rb') as f:
         p8data = f.read()
         try:
-            sign_key = serialization.load_der_private_key(p8data,password=None)
+            return serialization.load_der_private_key(p8data,password=None)
         except ValueError:
-            sign_key = serialization.load_pem_private_key(p8data,password=None)
+            return serialization.load_pem_private_key(p8data,password=None)
+    return None
+
+def get_role(r):
+    if (r == 'cvca'):
+        return Type.CVCA
+    elif (r== 'dv_domestic'):
+        return Type.DV_domestic
+    elif (r == 'dv_foreign'):
+        return Type.dv_foreign
+    elif (r == 'terminal'):
+        return Type.Terminal
+    return None
+
+def get_type(t, role):
+    if (t == 'at'):
+        typ = TypeAT(role)
+    elif (t == 'st'):
+        typ = TypeST(role)
+    elif (t == 'is'):
+        typ = TypeIS(role)
+    else:
+        return None
+    
+    for attr in typ._args:
+        setattr(typ, attr, getattr(args, attr, 0))
+        
+    return typ
+
+def get_puboid(scheme):
+    if (scheme == 'ECDSA_SHA_1'):
+        return oid.ID_TA_ECDSA_SHA_1
+    elif (scheme == 'ECDSA_SHA_224'):
+        return oid.ID_TA_ECDSA_SHA_224
+    elif (scheme == 'ECDSA_SHA_256'):
+        return oid.ID_TA_ECDSA_SHA_256
+    elif (scheme == 'ECDSA_SHA_384'):
+        return oid.ID_TA_ECDSA_SHA_384
+    elif (scheme == 'ECDSA_SHA_512'):
+        return oid.ID_TA_ECDSA_SHA_512
+    elif (scheme == 'RSA_v1_5_SHA_1'):
+        return oid.ID_TA_RSA_V1_5_SHA_1
+    elif (scheme == 'RSA_v1_5_SHA_256'):
+        return oid.ID_TA_RSA_V1_5_SHA_256
+    elif (scheme == 'RSA_v1_5_SHA_512'):
+        return oid.ID_TA_RSA_V1_5_SHA_512
+    elif (scheme == 'RSA_PSS_SHA_1'):
+        return oid.ID_TA_RSA_PSS_SHA_1
+    elif (scheme == 'RSA_PSS_SHA_256'):
+        return oid.ID_TA_RSA_PSS_SHA_256
+    elif (scheme == 'RSA_PSS_SHA_512'):
+        return oid.ID_TA_RSA_PSS_SHA_512
+    return None
+        
+def parse_as(a):
+    with open(a, 'rb') as f:
+        cadata = f.read()
+        car = CVC().decode(cadata).car()
+        scheme = CVC().decode(cadata).pubkey().oid()
+        return car,scheme
+    return None
+
+def main(args):
+    sign_key = load_private_key(args.sign_key)
     if (args.public_key):
         with open(args.public_key, 'rb') as f:
             pubdata = f.read()
@@ -124,89 +187,31 @@ def main(args):
                 priv_key = ec.generate_private_key(sign_key.curve)
             pub_key = priv_key.public_key()
             with open(args.out_key if args.out_key != None else args.chr+'.pkcs8','wb') as f:
-                der = priv_key.private_bytes(
-                   encoding=serialization.Encoding.DER,
-                   format=serialization.PrivateFormat.PKCS8,
-                   encryption_algorithm=serialization.NoEncryption()
-                )
+                der = priv_key.private_bytes(encoding=serialization.Encoding.DER, format=serialization.PrivateFormat.PKCS8, encryption_algorithm=serialization.NoEncryption())
                 f.write(der)
         else:
             pub_key = sign_key.public_key()
     
-    role = Type.CVCA
-    if (args.role == 'cvca'):
-        role = Type.CVCA
-    elif (args.role == 'dv_domestic'):
-        role = Type.DV_domestic
-    elif (args.role == 'dv_foreign'):
-        role = Type.dv_foreign
-    elif (args.role == 'terminal'):
-        role = Type.Terminal
+    role = get_role(args.role)
         
-    typ = None
-    if (args.type == 'at'):
-        typ = TypeAT(role)
-        for attr in TypeAT._args:
-            setattr(typ, attr, getattr(args, attr, 0))
-    elif (args.type == 'st'):
-        typ = TypeST(role)
-        for attr in TypeST._args:
-            setattr(typ, attr, getattr(args, attr, 0))
-    elif (args.type == 'is'):
-        typ = TypeIS(role)
-        for attr in TypeIS._args:
-            setattr(typ, attr, getattr(args, attr, 0))
-            
-    if (args.scheme == 'ECDSA_SHA_1'):
-        puboid = oid.ID_TA_ECDSA_SHA_1
-    elif (args.scheme == 'ECDSA_SHA_224'):
-        puboid = oid.ID_TA_ECDSA_SHA_224
-    elif (args.scheme == 'ECDSA_SHA_256'):
-        puboid = oid.ID_TA_ECDSA_SHA_256
-    elif (args.scheme == 'ECDSA_SHA_384'):
-        puboid = oid.ID_TA_ECDSA_SHA_384
-    elif (args.scheme == 'ECDSA_SHA_512'):
-        puboid = oid.ID_TA_ECDSA_SHA_512
-    elif (args.scheme == 'RSA_v1_5_SHA_1'):
-        puboid = oid.ID_TA_RSA_V1_5_SHA_1
-    elif (args.scheme == 'RSA_v1_5_SHA_256'):
-        puboid = oid.ID_TA_RSA_V1_5_SHA_256
-    elif (args.scheme == 'RSA_v1_5_SHA_512'):
-        puboid = oid.ID_TA_RSA_V1_5_SHA_512
-    elif (args.scheme == 'RSA_PSS_SHA_1'):
-        puboid = oid.ID_TA_RSA_PSS_SHA_1
-    elif (args.scheme == 'RSA_PSS_SHA_256'):
-        puboid = oid.ID_TA_RSA_PSS_SHA_256
-    elif (args.scheme == 'RSA_PSS_SHA_512'):
-        puboid = oid.ID_TA_RSA_PSS_SHA_512
-    else:
+    typ = get_type(args.type, role)
+    
+    puboid = get_puboid(args.scheme)
+    if (not puboid):
         if (isinstance(pub_key, rsa.RSAPublicKey)):
             puboid = oid.ID_TA_RSA_PSS_SHA256
         elif (isinstance(pub_key, ec.EllipticCurvePublicKey)):
             puboid = oid.ID_TA_ECDSA_SHA_256
             
     if (args.sign_as and typ):
-        with open(args.sign_as, 'rb') as f:
-            cadata = f.read()
-            car = CVC().decode(cadata).car()
-            signscheme = CVC().decode(cadata).pubkey().oid()
+        car, signscheme = parse_as(args.sign_as)
     else:
-         car = args.chr.encode()
-         signscheme = puboid
-    outercar = None
-    outerkey = None
-    outerscheme = None
+        car = args.chr.encode()
+        signscheme = puboid
+
     if (args.outer_as and args.outer_key):
-        with open(args.outer_as, 'rb') as f:
-            cadata = f.read()
-            outercar = CVC().decode(cadata).car()
-            outerscheme = CVC().decode(cadata).pubkey().oid()
-        with open(args.outer_key, 'rb') as f:
-            p8data = f.read()
-            try:
-                outerkey = serialization.load_der_private_key(p8data,password=None)
-            except ValueError:
-                outerkey = serialization.load_pem_private_key(p8data,password=None)
+        outercar, outerscheme = parse_as(args.outer_as)
+        outerkey = load_private_key(args.outer_key)
         cert = CVC().req(pub_key, puboid, sign_key, signscheme, car=args.chr.encode(), chr=args.chr.encode(), outercar=outercar, outerkey=outerkey, outerscheme=outerscheme)
     else:
         cert = CVC().cert(pub_key, puboid, sign_key, signscheme, car=car, chr=args.chr.encode(), role=typ, valid=args.valid if typ else None)
