@@ -71,3 +71,38 @@ class ASN1:
     def encode(self, encoding_type = DER):
         return self._buffer
         
+    def decode(self, data, encoding_type = DER):
+        self._buffer = data
+        return self
+    
+    def all(self):
+        p = 0
+        while p < len(self._buffer):
+            tag = self._buffer[p]
+            p += 1
+            if ((tag & 0x1f) == 0x1f):
+                tag = (tag << 8) | self._buffer[p]
+                p += 1
+            if ((self._buffer[p] & 0x80) == 0x80):
+                n = self._buffer[p] & 0x7f
+                p += 1
+                l = 0
+                for i in range(n):
+                    l = l | (self._buffer[p+i] << 8*(n-i-1))
+                p += n
+            else:
+                l = self._buffer[p]
+                p += 1
+            d = self._buffer[p:p+l]
+            p += l
+            yield (tag, d)
+            
+    def find(self, tag):
+        for t, d in self.all():
+            if (tag == t):
+                self._buffer = d
+                return self
+        return None
+    
+    def data(self):
+        return self._buffer
