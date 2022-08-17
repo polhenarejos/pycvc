@@ -44,6 +44,52 @@ def parse_args():
 def bcd2date(v):
     return date(v[0]*10+v[1]+2000, v[2]*10+v[3], v[4]*10+v[5])
 
+def find_domain(adata):
+    try:
+        P = CVC().decode(adata).pubkey().find(0x81)
+        while (P == None):
+            car = CVC().decode(adata).car()
+            chr = CVC().decode(adata).chr()
+            with open(car, 'rb') as f:
+                adata = f.read()
+                P = CVC().decode(adata).pubkey().find(0x81)
+            if (car == chr):
+                break
+        if (P):
+            P = P.data()
+            return find_curve(P)
+    except FileNotFoundError:
+        print(f'[Warning: File {car.decode()} not found]')
+    return None
+
+def verify(adata): 
+    car = CVC().decode(adata).car()
+    chr = CVC().decode(adata).chr()
+    
+    signature = CVC().decode(adata).signature()
+    body = CVC().decode(adata).body().data()
+    body = ASN1().add_tag(0x7f4e, body).encode()
+    if (car != chr):
+        with open(car, 'rb') as f:
+            adata = f.read()
+    scheme = CVC().decode(adata).pubkey().oid()
+    h,p = get_hash_padding(scheme)
+    try:
+        if (scheme_rsa(scheme)):
+            pubkey = rsa.RSAPublicNumbers(CVC().decode(adata).pubkey().find(0x82).data(), CVC().decode(adata).pubkey().find(0x81).data()).public_key()
+            pubkey.verify(signature, body, p, h)
+        else:
+            curve = find_domain(adata)
+            Q = CVC().decode(adata).pubkey().find(0x86).data()
+            if (curve and Q):
+                pubkey = ec.EllipticCurvePublicKey.from_encoded_point(curve, Q)
+                pubkey.verify(utils.encode_dss_signature(int.from_bytes(signature[:len(signature)//2],'big'), int.from_bytes(signature[len(signature)//2:],'big')), body, ec.ECDSA(h))
+            else:
+                return False
+    except InvalidSignature:
+        return False
+    return True
+
 def main(args):
     with open(args.file, 'rb') as f:
         cdata = f.read()
@@ -54,66 +100,48 @@ def main(args):
     print('  Public Key:')
     puboid = CVC().decode(cdata).pubkey().oid()
     print(f'    Scheme: {oid2scheme(puboid)}')
-    pubkey = None
-    scheme = puboid
+    chr = CVC().decode(cdata).chr()
+    car = CVC().decode(cdata).car()
     if (scheme_rsa(puboid)):
-        pubkey = rsa.RSAPublicNumbers(CVC().decode(cdata).pubkey().find(0x82).data(), CVC().decode(cdata).pubkey().find(0x81).data()).public_key()
-        print(f'    Modulus: {hexlify(pubkey.public_numbers().n)}')
-        print(f'    Exponent: {hexlify(pubkey.public_numbers().e)}')
+        print(f'    Modulus: {hexlify(CVC().decode(cdata).pubkey().find(0x81).data()).decode()}')
+        print(f'    Exponent: {hexlify(CVC().decode(cdata).pubkey().find(0x82).data()).decode()}')
     else:
-        P = None
-        if (CVC().decode(cdata).pubkey().find(0x81)):
-            P = CVC().decode(cdata).pubkey().find(0x81).data()
-            curve = find_curve(P)
-            Q = CVC().decode(cdata).pubkey().find(0x86).data()
-            pubkey = ec.EllipticCurvePublicKey.from_encoded_point(curve, Q)
-        else:
-            adata = cdata
-            scheme = None
-            Q = None
-            while (P == None):
-                car = CVC().decode(adata).car()
-                with open(car, 'rb') as f:
-                    adata = f.read()
-                    P = CVC().decode(adata).pubkey().find(0x81)
-                    if (scheme == None):
-                        scheme = CVC().decode(adata).pubkey().oid()
-                    if (Q == None):
-                        Q = CVC().decode(adata).pubkey().find(0x86).data()
-            if (P):
-                P = P.data()
-                curve = find_curve(P)
-                pubkey = ec.EllipticCurvePublicKey.from_encoded_point(curve, Q)
         print(f'    Public Point: {hexlify(CVC().decode(cdata).pubkey().find(0x86).data()).decode()}')
-    print(f'  CHR: {(CVC().decode(cdata).chr()).decode()}')
+    print(f'  CHR: {chr.decode()}')
     role = CVC().decode(cdata).role()
     if (role):
         print('  CHAT:')
         o = role.oid()
         if (o == oid.ID_IS):
-            print('    Role: TypeIS')
+            print('    Role:  TypeIS')
         elif (o == oid.ID_AT):
-            print('    Role: TypeAT')
+            print('    Role:  TypeAT')
         elif (o == oid.ID_ST):
-            print('    Role: TypeST')
+            print('    Role:  TypeST')
         print(f'    Bytes: {hexlify(CVC().decode(cdata).role().find(0x53).data()).decode()}')
-        print(f'  Since: {bcd2date(CVC().decode(cdata).valid()).strftime("%Y-%m-%d")}')
+        print(f'  Since:   {bcd2date(CVC().decode(cdata).valid()).strftime("%Y-%m-%d")}')
         print(f'  Expires: {bcd2date(CVC().decode(cdata).expires()).strftime("%Y-%m-%d")}')
-    signature = CVC().decode(cdata).signature()
-    body = CVC().decode(cdata).body().data()
-    body = ASN1().add_tag(0x7f4e, body).encode()
-    if (pubkey):
-        h,p = get_hash_padding(scheme)
+    if (verify(cdata)):
+        print('Inner signature is VALID')
+        ret = True
+    else:
+        print('Inner signature is NOT VALID')
+        ret = False
+    if (car != chr):
         try:
-            if (scheme_rsa(puboid)):
-                pubkey.verify(signature, body, p, h)
-            else:
-                pubkey.verify(utils.encode_dss_signature(int.from_bytes(signature[:len(signature)//2],'big'), int.from_bytes(signature[len(signature)//2:],'big')), body, ec.ECDSA(h))
-            print('Inner signature is VALID')
-        except InvalidSignature:
-            print('Inner signature is NOT VALID')
-            
-    
+            while (car != chr):
+                with open(car, 'rb') as f:
+                    adata = f.read()
+                    ret = ret and verify(adata)
+                    chr = CVC().decode(adata).chr()
+                    car = CVC().decode(adata).car()
+        except FileNotFoundError:
+            print(f'[Warning: File {car.decode()} not found]')
+            ret = False
+    if (ret):
+        print('Certificate VALID')
+    else:
+        print('Certificate NOT VALID')
 
 if __name__ == "__main__":
     args = parse_args()
