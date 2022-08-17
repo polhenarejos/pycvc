@@ -18,7 +18,7 @@
  */
 """
 
-from utils import to_bytes
+from cvc.utils import to_bytes
 
 class ASN1:
     DER = 1

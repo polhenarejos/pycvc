@@ -18,7 +18,7 @@
  */
 """
 
-import oid
+from cvc import oid
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding
 

@@ -18,8 +18,8 @@
  */
 """
 
-from utils import to_bytes
-import oid
+from cvc.utils import to_bytes
+from cvc import oid
 
 class Type:
     CVCA = 3

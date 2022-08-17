@@ -19,17 +19,18 @@
  */
 """
 
-import argparse, logging
+import argparse, logging, sys
 from cryptography.hazmat.primitives.asymmetric import ec, rsa
 from cryptography.hazmat.primitives import serialization
-from terminal import Type, TypeIS, TypeAT, TypeST
-from cvc import CVC
-import oid
+from cvc.terminal import Type, TypeIS, TypeAT, TypeST
+from cvc.certificates import CVC
+from cvc import __version__, oid
 
 logger = logging.getLogger(__name__)   
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Generate a Card Verifiable Certificate')
+    parser.add_argument('--version', help='Displays the current version', action='store_true')
     parser.add_argument('-o','--out-cert', help='Generated certificate file', metavar='FILENAME')
     parser.add_argument('-r','--role', help='The role of entity', choices=['cvca','dv_domestic','dv_foreign','terminal'])
     parser.add_argument('-t','--type', help='The type of terminal. If not provided, it creates a certificate request', choices=['at','is','st'])    
@@ -96,9 +97,17 @@ def parse_args():
     
     parser.add_argument('--read-iris', help='Read access to ePassport application: DG 4 (Iris)', action='store_true')
     parser.add_argument('--read-finger', help='Read access to ePassport application: DG 3 (Fingerprint)', action='store_true')
-
-    args = parser.parse_args()
     
+    if ('--version' in sys.argv):
+        print('Card Verifiable Certificate tools for Python')
+        print('Author: Pol Henarejos')
+        print(f'Version {__version__}')
+        print('')
+        print('Report bugs to http://github.com/polhenarejos/pycvc/issues')
+        print('')
+        sys.exit(0)
+    
+    args = parser.parse_args()
     return args
 
 def load_private_key(filename):
@@ -121,7 +130,7 @@ def get_role(r):
         return Type.Terminal
     return None
 
-def get_type(t, role):
+def get_type(t, role, args):
     if (t == 'at'):
         typ = TypeAT(role)
     elif (t == 'st'):
@@ -168,7 +177,7 @@ def main(args):
     
     role = get_role(args.role)
         
-    typ = get_type(args.type, role)
+    typ = get_type(args.type, role, args)
     
     puboid = oid.scheme2oid(args.scheme)
     if (not puboid):
@@ -192,8 +201,10 @@ def main(args):
     
     with open(args.out_cert if args.out_cert != None else args.chr+'.cvcert','wb') as f:
         f.write(cert.encode())
-    
-if __name__ == "__main__":
+
+def run():
     args = parse_args()
     main(args)
     
+if __name__ == "__main__":
+    run()

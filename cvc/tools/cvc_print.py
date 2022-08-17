@@ -19,16 +19,16 @@
  */
 """
 
-import argparse, logging
-from cvc import CVC
+import argparse, logging, sys
+from cvc.certificates import CVC
 from binascii import hexlify
-from utils import scheme_rsa, get_hash_padding
-from oid import oid2scheme
-import oid
+from cvc.utils import scheme_rsa, get_hash_padding
+from cvc.oid import oid2scheme
 from cryptography.hazmat.primitives.asymmetric import rsa, ec, utils
 from cryptography.exceptions import InvalidSignature
-from ec_curves import find_curve
-from asn1 import ASN1
+from cvc.ec_curves import find_curve
+from cvc.asn1 import ASN1
+from cvc import __version__, oid
 from datetime import date
 import os
 
@@ -38,8 +38,17 @@ cert_dir = b''
 def parse_args():
     global cert_dir
     parser = argparse.ArgumentParser(description='Prints a Card Verifiable Certificate')
+    parser.add_argument('--version', help='Displays the current version', action='store_true')
     parser.add_argument('file',help='Certificate to print', metavar='FILENAME')
     parser.add_argument('-d','--directory', help='Directory where chain CV certificates are located', metavar='DIRECTORY')
+    if ('--version' in sys.argv):
+        print('Card Verifiable Certificate tools for Python')
+        print('Author: Pol Henarejos')
+        print(f'Version {__version__}')
+        print('')
+        print('Report bugs to http://github.com/polhenarejos/pycvc/issues')
+        print('')
+        sys.exit(0)
     args = parser.parse_args()
     if (args.directory):
         cert_dir = args.directory.encode()
@@ -166,7 +175,10 @@ def main(args):
     else:
         print('Certificate NOT VALID')
 
-if __name__ == "__main__":
+def run():
     args = parse_args()
     main(args)
+
+if __name__ == "__main__":
+    run()
     

@@ -21,9 +21,9 @@
 from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 from cryptography.hazmat.primitives.asymmetric import ec, rsa, utils
 import datetime
-from utils import to_bytes, bcd, get_hash_padding
-from ec_curves import ec_domain
-from asn1 import ASN1
+from cvc.utils import to_bytes, bcd, get_hash_padding
+from cvc.ec_curves import ec_domain
+from cvc.asn1 import ASN1
 
 class CVC:
     __data = None
