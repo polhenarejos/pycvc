@@ -38,15 +38,25 @@ INSTALL_REQUIRES = [
 
 if sys.platform.startswith('win32'):
     INSTALL_REQUIRES.append("pywin32")
+    
+try:
+    import pypandoc
+    long_description = pypandoc.convert_file('README.md', 'rst')
+except(IOError, ImportError):
+    long_description = open('README.md').read()
 
 setup(
-    name='cvc',
+    name='pycvc',
     packages=['cvc','cvc/tools'],
     version=version,
     description='Card Verifiable Certificate tools',
     license='GPLv3',
+    license_files='LICENSE',
     author="Pol Henarejos",
     author_email='pol.henarejos@cttc.es',
+    url='https://github.com/polhenarejos/pycvc',
+    long_description=long_description,
+    long_description_content_type='text/markdown',
     python_requires='>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, !=3.5.*',
     classifiers=[
         'Development Status :: 5 - Production/Stable',
