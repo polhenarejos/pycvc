@@ -139,9 +139,9 @@ def get_type(t, role):
 def parse_as(a):
     with open(a, 'rb') as f:
         cadata = f.read()
-        car = CVC().decode(cadata).car()
+        chr = CVC().decode(cadata).chr()
         scheme = CVC().decode(cadata).pubkey().oid()
-        return car,scheme
+        return chr,scheme
     return None
 
 def main(args):
