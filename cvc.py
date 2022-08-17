@@ -48,7 +48,9 @@ class CVC:
         return self
     
     def outer_car(self):
-        return self.req().find(0x42).data()
+        if (self.req().find(0x42)):
+            return self.req().find(0x42).data()
+        return None
     
     def chr(self, chr = None):
         if (self.__data != None):
@@ -102,7 +104,7 @@ class CVC:
             return self.cert().find(0x5f37).data()
         
     def outer_signature(self):
-        if (self.__data != None):
+        if (self.req().find(0x5f37)):
             return self.req().find(0x5f37).data()
         
     def sign(self, key, scheme):
@@ -124,14 +126,22 @@ class CVC:
     
     def req(self, pubkey = None, scheme = None, signkey = None, signscheme = None, car = None, chr = None, outercar = None, outerkey = None, outerscheme = None, extensions = None):
         if (self.__data != None):
-            aut = self.__a.find(0x67)
+            aut = ASN1().decode(self.__data).find(0x67)
             if (aut):
                 return aut
-            return self.__a
+            return ASN1().decode(self.__data)
         cert = self.cert(pubkey, scheme, signkey, signscheme, car, chr, role=None, valid=None, since=None, extensions=extensions)
         if (outercar != None and outerkey != None and outerscheme != None):
             self.__a = ASN1().add_tag(0x67, cert.car(outercar).sign(outerkey, outerscheme).encode())
         return self
+    
+    def is_req(self):
+        if (self.__data != None):
+            b = self.__a
+            ret = self.__a.find(0x67) != None
+            self.__a = b
+            return ret
+        return False
     
     def encode(self):
         return self.__a.encode()
