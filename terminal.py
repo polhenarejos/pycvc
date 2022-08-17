@@ -40,6 +40,7 @@ class Type:
 
 class TypeIS(Type):
     OID = oid.ID_IS
+    name = 'TypeIS'
     _args = ('rfu5', 'rfu4', 'rfu3', 'rfu2', 'iris', 'finger')
     def __init__(self, role, **kwargs):
         for attr in self._args:
@@ -48,6 +49,7 @@ class TypeIS(Type):
 
 class TypeAT(Type):
     OID = oid.ID_AT
+    name = 'TypeAT'
     _args = ('write_dg17', 'write_dg18', 'write_dg19', 'write_dg20', 'write_dg21', 'write_dg22', 'rfu31', 'psa', 'read_dg22', 'read_dg21', 'read_dg20', 'read_dg19', 'read_dg18', 'read_dg17', 'read_dg16', 'read_dg15', 'read_dg14', 'read_dg13', 'read_dg12', 'read_dg11', 'read_dg10', 'read_dg9', 'read_dg8', 'read_dg7', 'read_dg6', 'read_dg5', 'read_dg4', 'read_dg3', 'read_dg2', 'read_dg1', 'install_qual_cert', 'install_cert', 'pin_management', 'can_allowed', 'privileged', 'rid', 'verify_community', 'verify_age')
     def __init__(self, role, **kwargs):
         for attr in self._args:
@@ -56,6 +58,7 @@ class TypeAT(Type):
 
 class TypeST(Type):
     OID = oid.ID_ST
+    name = 'TypeST'
     _args = ('rfu5', 'rfu4', 'rfu3', 'rfu2', 'gen_qualified', 'gen_sig')
     def __init__(self, role, **kwargs):
         for attr in self._args:
