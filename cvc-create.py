@@ -154,7 +154,7 @@ def main(args):
             except ValueError:
                 pub_key = serialization.load_pem_public_key(pubdata)
     else:
-        if (args.sign_as and args.type):            
+        if (args.sign_as and args.type and not args.outer_as and not args.outer_key):            
             if (isinstance(sign_key, rsa.RSAPrivateKey)):
                 priv_key = rsa.generate_private_key(key_size=sign_key.key_size, public_exponent=65537)
             elif (isinstance(sign_key, ec.EllipticCurvePrivateKey)):
@@ -177,7 +177,7 @@ def main(args):
         elif (isinstance(pub_key, ec.EllipticCurvePublicKey)):
             puboid = oid.ID_TA_ECDSA_SHA_256
             
-    if (args.sign_as and typ):
+    if (args.sign_as and typ and not args.outer_as and not args.outer_key):
         car, signscheme = parse_as(args.sign_as)
     else:
         car = args.chr.encode()
