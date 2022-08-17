@@ -60,19 +60,24 @@ def find_domain(adata):
             if (car == chr):
                 break
         if (P):
-            P = P.data()
-            return find_curve(P)
+            return find_curve(P.data())
     except FileNotFoundError:
         print(f'[Warning: File {car.decode()} not found]')
     return None
 
-def verify(adata): 
-    car = CVC().decode(adata).car()
+def verify(adata, outer = False):
     chr = CVC().decode(adata).chr()
     
-    signature = CVC().decode(adata).signature()
-    body = CVC().decode(adata).body().data()
-    body = ASN1().add_tag(0x7f4e, body).encode()
+    if (outer == True):
+        car = CVC().decode(adata).outer_car()
+        signature = CVC().decode(adata).outer_signature()
+        body = CVC().decode(adata).cert().data()
+        body = ASN1().add_tag(0x7f21, body).add_tag(0x42, car).encode()
+    else:
+        car = CVC().decode(adata).car()
+        signature = CVC().decode(adata).signature()
+        body = CVC().decode(adata).body().data()
+        body = ASN1().add_tag(0x7f4e, body).encode()
     if (car != chr):
         try:
             with open(os.path.join(cert_dir,car), 'rb') as f:
@@ -146,6 +151,16 @@ def main(args):
         except FileNotFoundError:
             print(f'[Warning: File {car.decode()} not found]')
             ret = False
+    else:
+        isreq = CVC().decode(cdata).is_req()
+        if (isreq):
+            outret = verify(cdata, outer=True)
+            if (outret):
+                print('Outer signature is VALID')
+            else:
+                print('Outer signature is NOT VALID')
+            ret = ret and outret
+            
     if (ret):
         print('Certificate VALID')
     else:
