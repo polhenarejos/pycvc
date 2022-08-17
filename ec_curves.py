@@ -18,6 +18,8 @@
  */
 """
 
+from cryptography.hazmat.primitives.asymmetric import ec
+
 class SECP192R1:
     P = bytearray(b"\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFE\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF")
     A = bytearray(b"\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFE\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFC")
@@ -141,4 +143,31 @@ def ec_domain(curve):
         return SECP192K1()
     elif (curve.name == 'secp256k1'):
         return SECP256K1()
+    return None
+
+def find_curve(P):
+    if (SECP192K1.P == P):
+        return ec.SECP192K1()
+    elif (SECP192R1.P == P):
+        return ec.SECP192R1()
+    elif (SECP256K1.P == P):
+        return ec.SECP256K1()
+    elif (SECP256R1.P == P):
+        return ec.SECP256R1()
+    elif (SECP384R1.P == P):
+        return ec.SECP384R1()
+    elif (SECP521R1.P == P):
+        return ec.SECP521R1()
+    elif (BP192R1.P == P):
+        return ec.BP192R1()
+    elif (BP224R1.P == P):
+        return ec.BP224R1()
+    elif (BP256R1.P == P):
+        return ec.BP256R1()
+    elif (BP320R1.P == P):
+        return ec.BP320R1()
+    elif (BP384R1.P == P):
+        return ec.BP384R1()
+    elif (BP512R1.P == P):
+        return ec.BP512R1()
     return None
