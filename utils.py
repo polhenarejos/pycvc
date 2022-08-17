@@ -19,6 +19,8 @@
 """
 
 import oid
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric import padding
 
 def to_bytes(n):
     if (n == 0):
@@ -40,3 +42,22 @@ def scheme_ecdsa(o):
 
 def from_bcd(c):
     return ''.join([str(s) for s in c])
+
+def get_hash_padding(scheme):
+    h,p = (None,None)
+    if (scheme == oid.ID_TA_ECDSA_SHA_1 or scheme == oid.ID_TA_RSA_PSS_SHA_1 or scheme == oid.ID_TA_RSA_V1_5_SHA_1):
+        h = hashes.SHA1()
+    elif (scheme == oid.ID_TA_ECDSA_SHA_224):
+        h = hashes.SHA224()
+    elif (scheme == oid.ID_TA_ECDSA_SHA_256 or scheme == oid.ID_TA_RSA_PSS_SHA_256 or scheme == oid.ID_TA_RSA_V1_5_SHA_256):
+        h = hashes.SHA256()
+    elif (scheme == oid.ID_TA_ECDSA_SHA_384):
+        h = hashes.SHA384()
+    elif (scheme == oid.ID_TA_ECDSA_SHA_512 or scheme == oid.ID_TA_RSA_PSS_SHA_512 or scheme == oid.ID_TA_RSA_V1_5_SHA_512):
+        h = hashes.SHA512()
+    
+    if (scheme == oid.ID_TA_RSA_V1_5_SHA_1 or scheme == oid.ID_TA_RSA_V1_5_SHA_256 or scheme == oid.ID_TA_RSA_V1_5_SHA_512):
+        p = padding.PKCS1v15()
+    elif (scheme == oid.ID_TA_RSA_PSS_SHA_1 or scheme == oid.ID_TA_RSA_PSS_SHA_256 or scheme == oid.ID_TA_RSA_PSS_SHA_512):
+        p = padding.PSS(mgf=padding.MGF1(h), salt_length=padding.PSS.MAX_LENGTH)
+    return h,p

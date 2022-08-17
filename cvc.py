@@ -19,11 +19,9 @@
 """
 
 from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
-from cryptography.hazmat.primitives.asymmetric import ec, rsa, padding, utils
-from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric import ec, rsa, utils
 import datetime
-import oid
-from utils import to_bytes, bcd
+from utils import to_bytes, bcd, get_hash_padding
 from ec_curves import ec_domain
 from asn1 import ASN1
 
@@ -108,26 +106,13 @@ class CVC:
             return self.req().find(0x5f37).data()
         
     def sign(self, key, scheme):
-        if (scheme == oid.ID_TA_ECDSA_SHA_1 or scheme == oid.ID_TA_RSA_PSS_SHA_1 or scheme == oid.ID_TA_RSA_V1_5_SHA_1):
-            h = hashes.SHA1()
-        elif (scheme == oid.ID_TA_ECDSA_SHA_224):
-            h = hashes.SHA224()
-        elif (scheme == oid.ID_TA_ECDSA_SHA_256 or scheme == oid.ID_TA_RSA_PSS_SHA_256 or scheme == oid.ID_TA_RSA_V1_5_SHA_256):
-            h = hashes.SHA256()
-        elif (scheme == oid.ID_TA_ECDSA_SHA_384):
-            h = hashes.SHA384()
-        elif (scheme == oid.ID_TA_ECDSA_SHA_512 or scheme == oid.ID_TA_RSA_PSS_SHA_512 or scheme == oid.ID_TA_RSA_V1_5_SHA_512):
-            h = hashes.SHA512()
+        h,p = get_hash_padding(scheme)
         if (isinstance(key, ec.EllipticCurvePrivateKey)):
             signature = key.sign(self.__a.encode(), ec.ECDSA(h))
             r,s = utils.decode_dss_signature(signature)
             signature = to_bytes(r) + to_bytes(s)
         elif (isinstance(key, rsa.RSAPrivateKey)):
-            if (scheme == oid.ID_TA_RSA_V1_5_SHA_1 or scheme == oid.ID_TA_RSA_V1_5_SHA_256 or scheme == oid.ID_TA_RSA_V1_5_SHA_512):
-                p = padding.PKCS1v15()
-            elif (scheme == oid.ID_TA_RSA_PSS_SHA_1 or scheme == oid.ID_TA_RSA_PSS_SHA_256 or scheme == oid.ID_TA_RSA_PSS_SHA_512):
-                p = padding.PSS(mgf=padding.MGF1(h), salt_length=padding.PSS.MAX_LENGTH)
-            signature = key.sign(self.__a.buffer(), p, h)
+            signature = key.sign(self.__a.encode(), p, h)
         self.__a = self.__a.add_tag(0x5f37, bytearray(signature))
         return self
 
