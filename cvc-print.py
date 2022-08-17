@@ -25,20 +25,24 @@ from binascii import hexlify
 from utils import scheme_rsa, get_hash_padding
 from oid import oid2scheme
 import oid
-from cryptography.hazmat.primitives.asymmetric import rsa, ec, padding, utils
-from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric import rsa, ec, utils
 from cryptography.exceptions import InvalidSignature
 from ec_curves import find_curve
 from asn1 import ASN1
 from datetime import date
+import os
 
 logger = logging.getLogger(__name__)   
+cert_dir = b''
 
 def parse_args():
+    global cert_dir
     parser = argparse.ArgumentParser(description='Prints a Card Verifiable Certificate')
     parser.add_argument('file',help='Certificate to print', metavar='FILENAME')
+    parser.add_argument('-d','--directory', help='Directory where chain CV certificates are located', metavar='DIRECTORY')
     args = parser.parse_args()
-    
+    if (args.directory):
+        cert_dir = args.directory.encode()
     return args
 
 def bcd2date(v):
@@ -50,7 +54,7 @@ def find_domain(adata):
         while (P == None):
             car = CVC().decode(adata).car()
             chr = CVC().decode(adata).chr()
-            with open(car, 'rb') as f:
+            with open(os.path.join(cert_dir,car), 'rb') as f:
                 adata = f.read()
                 P = CVC().decode(adata).pubkey().find(0x81)
             if (car == chr):
@@ -70,8 +74,12 @@ def verify(adata):
     body = CVC().decode(adata).body().data()
     body = ASN1().add_tag(0x7f4e, body).encode()
     if (car != chr):
-        with open(car, 'rb') as f:
-            adata = f.read()
+        try:
+            with open(os.path.join(cert_dir,car), 'rb') as f:
+                adata = f.read()
+        except FileNotFoundError:
+            print(f'[Warning: File {car.decode()} not found]')
+            return False
     scheme = CVC().decode(adata).pubkey().oid()
     h,p = get_hash_padding(scheme)
     try:
@@ -130,7 +138,7 @@ def main(args):
     if (car != chr):
         try:
             while (car != chr):
-                with open(car, 'rb') as f:
+                with open(os.path.join(cert_dir,car), 'rb') as f:
                     adata = f.read()
                     ret = ret and verify(adata)
                     chr = CVC().decode(adata).chr()
