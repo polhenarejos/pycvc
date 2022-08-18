@@ -92,7 +92,7 @@ class CVC:
         if (valid != None):
             if (since == None):
                 since = datetime.datetime.now().strftime("%y%m%d")
-            until = (datetime.datetime.strptime(since, "%y%m%d") + datetime.timedelta(days = valid)).strftime("%y%m%d")
+            until = (datetime.datetime.strptime(since, "%y%m%d") + datetime.timedelta(days = int(valid))).strftime("%y%m%d")
             self.__a = self.__a.add_tag(0x5f25, bcd(since)).add_tag(0x5f24, bcd(until))
         return self
     
