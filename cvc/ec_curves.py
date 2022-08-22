@@ -1,19 +1,19 @@
 # -*- coding: utf-8 -*-
 """
-/* 
+/*
  * This file is part of the pyCVC distribution (https://github.com/polhenarejos/pycvc).
  * Copyright (c) 2022 Pol Henarejos.
- * 
- * This program is free software: you can redistribute it and/or modify  
- * it under the terms of the GNU General Public License as published by  
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, version 3.
  *
- * This program is distributed in the hope that it will be useful, but 
- * WITHOUT ANY WARRANTY; without even the implied warranty of 
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU 
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
+ * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 """
@@ -117,7 +117,7 @@ class SECP256K1:
     O = bytearray(b"\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFE\xBA\xAE\xDC\xE6\xAF\x48\xA0\x3B\xBF\xD2\x5E\x8C\xD0\x36\x41\x41")
     F = bytearray(b"\x01")
 
-    
+
 def ec_domain(curve):
     if (curve.name == 'secp192r1'):
         return SECP192R1()
@@ -146,9 +146,7 @@ def ec_domain(curve):
     return None
 
 def find_curve(P):
-    if (SECP192K1.P == P):
-        return ec.SECP192K1()
-    elif (SECP192R1.P == P):
+    if (SECP192R1.P == P):
         return ec.SECP192R1()
     elif (SECP256K1.P == P):
         return ec.SECP256K1()
@@ -158,16 +156,10 @@ def find_curve(P):
         return ec.SECP384R1()
     elif (SECP521R1.P == P):
         return ec.SECP521R1()
-    elif (BP192R1.P == P):
-        return ec.BP192R1()
-    elif (BP224R1.P == P):
-        return ec.BP224R1()
     elif (BP256R1.P == P):
-        return ec.BP256R1()
-    elif (BP320R1.P == P):
-        return ec.BP320R1()
+        return ec.BrainpoolP256R1()
     elif (BP384R1.P == P):
-        return ec.BP384R1()
+        return ec.BrainpoolP384R1()
     elif (BP512R1.P == P):
-        return ec.BP512R1()
+        return ec.BrainpoolP512R1()
     return None
