@@ -1,20 +1,20 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-/* 
+/*
  * This file is part of the pyCVC distribution (https://github.com/polhenarejos/pycvc).
  * Copyright (c) 2022 Pol Henarejos.
- * 
- * This program is free software: you can redistribute it and/or modify  
- * it under the terms of the GNU General Public License as published by  
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, version 3.
  *
- * This program is distributed in the hope that it will be useful, but 
- * WITHOUT ANY WARRANTY; without even the implied warranty of 
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU 
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
+ * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 """
@@ -26,14 +26,14 @@ from cvc.terminal import Type, TypeIS, TypeAT, TypeST
 from cvc.certificates import CVC
 from cvc import __version__, oid
 
-logger = logging.getLogger(__name__)   
+logger = logging.getLogger(__name__)
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Generate a Card Verifiable Certificate')
     parser.add_argument('--version', help='Displays the current version', action='store_true')
     parser.add_argument('-o','--out-cert', help='Generated certificate file', metavar='FILENAME')
     parser.add_argument('-r','--role', help='The role of entity', choices=['cvca','dv_domestic','dv_foreign','terminal'])
-    parser.add_argument('-t','--type', help='The type of terminal. If not provided, it creates a certificate request', choices=['at','is','st'])    
+    parser.add_argument('-t','--type', help='The type of terminal. If not provided, it creates a certificate request', choices=['at','is','st'])
     parser.add_argument('--chat', help='Raw Card Holder Authorization Template')
     parser.add_argument('--valid', help='Days of validity since today or date provided by --since', default=90)
     parser.add_argument('-k','--sign-key', help='Private key to sign the certificate.', required=True, metavar='FILENAME')
@@ -87,17 +87,17 @@ def parse_args():
     parser.add_argument('--rid', help='Allow restricted identification', action='store_true')
     parser.add_argument('--verify-community', help='Allow community ID verification', action='store_true')
     parser.add_argument('--verify-age', help='Allow age verification', action='store_true')
-    
+
     parser.add_argument('--rfu5', help='Allow RFU bit 5', action='store_true')
     parser.add_argument('--rfu4', help='Allow RFU bit 4', action='store_true')
     parser.add_argument('--rfu3', help='Allow RFU bit 3', action='store_true')
     parser.add_argument('--rfu2', help='Allow RFU bit 2', action='store_true')
     parser.add_argument('--gen-qual-sig', help='Allow generated qualified electronic signature', action='store_true')
     parser.add_argument('--gen-sig', help='Allow generated electronic signature', action='store_true')
-    
+
     parser.add_argument('--read-iris', help='Read access to ePassport application: DG 4 (Iris)', action='store_true')
     parser.add_argument('--read-finger', help='Read access to ePassport application: DG 3 (Fingerprint)', action='store_true')
-    
+
     if ('--version' in sys.argv):
         print('Card Verifiable Certificate tools for Python')
         print('Author: Pol Henarejos')
@@ -106,7 +106,7 @@ def parse_args():
         print('Report bugs to http://github.com/polhenarejos/pycvc/issues')
         print('')
         sys.exit(0)
-    
+
     args = parser.parse_args()
     return args
 
@@ -139,12 +139,12 @@ def get_type(t, role, args):
         typ = TypeIS(role)
     else:
         return None
-    
+
     for attr in typ._args:
         setattr(typ, attr, getattr(args, attr, 0))
-        
+
     return typ
-        
+
 def parse_as(a):
     with open(a, 'rb') as f:
         cadata = f.read()
@@ -163,7 +163,7 @@ def main(args):
             except ValueError:
                 pub_key = serialization.load_pem_public_key(pubdata)
     else:
-        if (args.sign_as and args.type and not args.outer_as and not args.outer_key):            
+        if (args.sign_as and args.type and not args.outer_as and not args.outer_key):
             if (isinstance(sign_key, rsa.RSAPrivateKey)):
                 priv_key = rsa.generate_private_key(key_size=sign_key.key_size, public_exponent=65537)
             elif (isinstance(sign_key, ec.EllipticCurvePrivateKey)):
@@ -174,18 +174,18 @@ def main(args):
                 f.write(der)
         else:
             pub_key = sign_key.public_key()
-    
+
     role = get_role(args.role)
-        
+
     typ = get_type(args.type, role, args)
-    
+
     puboid = oid.scheme2oid(args.scheme)
     if (not puboid):
         if (isinstance(pub_key, rsa.RSAPublicKey)):
             puboid = oid.ID_TA_RSA_PSS_SHA256
         elif (isinstance(pub_key, ec.EllipticCurvePublicKey)):
             puboid = oid.ID_TA_ECDSA_SHA_256
-            
+
     if (args.sign_as and typ and not args.outer_as and not args.outer_key):
         car, signscheme = parse_as(args.sign_as)
     else:
@@ -198,13 +198,13 @@ def main(args):
         cert = CVC().req(pub_key, puboid, sign_key, signscheme, car=args.chr.encode(), chr=args.chr.encode(), outercar=outercar, outerkey=outerkey, outerscheme=outerscheme)
     else:
         cert = CVC().cert(pub_key, puboid, sign_key, signscheme, car=car, chr=args.chr.encode(), role=typ, valid=args.valid if typ else None)
-    
+
     with open(args.out_cert if args.out_cert != None else args.chr+'.cvcert','wb') as f:
         f.write(cert.encode())
 
 def run():
     args = parse_args()
     main(args)
-    
+
 if __name__ == "__main__":
     run()
