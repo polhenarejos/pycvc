@@ -108,7 +108,9 @@ class ASN1:
                 pos_counter += 1
         return None
 
-    def data(self):
+    def data(self, return_tag=False):
+        if (return_tag is True):
+            return ASN1.make_tag(self._current_tag, self._buffer)
         return self._buffer
 
     def oid(self):
