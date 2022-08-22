@@ -1,20 +1,20 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-/* 
+/*
  * This file is part of the pyCVC distribution (https://github.com/polhenarejos/pycvc).
  * Copyright (c) 2022 Pol Henarejos.
- * 
- * This program is free software: you can redistribute it and/or modify  
- * it under the terms of the GNU General Public License as published by  
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, version 3.
  *
- * This program is distributed in the hope that it will be useful, but 
- * WITHOUT ANY WARRANTY; without even the implied warranty of 
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU 
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
+ * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 """
@@ -22,17 +22,13 @@
 import argparse, logging, sys
 from cvc.certificates import CVC
 from binascii import hexlify
-from cvc.utils import scheme_rsa, get_hash_padding
+from cvc.utils import scheme_rsa
 from cvc.oid import oid2scheme
-from cryptography.hazmat.primitives.asymmetric import rsa, ec, utils
-from cryptography.exceptions import InvalidSignature
-from cvc.ec_curves import find_curve
-from cvc.asn1 import ASN1
 from cvc import __version__, oid
 from datetime import date
 import os
 
-logger = logging.getLogger(__name__)   
+logger = logging.getLogger(__name__)
 cert_dir = b''
 
 def parse_args():
@@ -57,65 +53,10 @@ def parse_args():
 def bcd2date(v):
     return date(v[0]*10+v[1]+2000, v[2]*10+v[3], v[4]*10+v[5])
 
-def find_domain(adata):
-    try:
-        P = CVC().decode(adata).pubkey().find(0x81)
-        while (P == None):
-            car = CVC().decode(adata).car()
-            chr = CVC().decode(adata).chr()
-            with open(os.path.join(cert_dir,car), 'rb') as f:
-                adata = f.read()
-                P = CVC().decode(adata).pubkey().find(0x81)
-            if (car == chr):
-                break
-        if (P):
-            return find_curve(P.data())
-    except FileNotFoundError:
-        print(f'[Warning: File {car.decode()} not found]')
-    return None
-
-def verify(adata, outer = False):
-    chr = CVC().decode(adata).chr()
-    
-    if (outer == True):
-        car = CVC().decode(adata).outer_car()
-        signature = CVC().decode(adata).outer_signature()
-        body = CVC().decode(adata).cert().data()
-        body = ASN1().add_tag(0x7f21, body).add_tag(0x42, car).encode()
-    else:
-        car = CVC().decode(adata).car()
-        signature = CVC().decode(adata).signature()
-        body = CVC().decode(adata).body().data()
-        body = ASN1().add_tag(0x7f4e, body).encode()
-    if (car != chr):
-        try:
-            with open(os.path.join(cert_dir,car), 'rb') as f:
-                adata = f.read()
-        except FileNotFoundError:
-            print(f'[Warning: File {car.decode()} not found]')
-            return False
-    scheme = CVC().decode(adata).pubkey().oid()
-    h,p = get_hash_padding(scheme)
-    try:
-        if (scheme_rsa(scheme)):
-            pubkey = rsa.RSAPublicNumbers(CVC().decode(adata).pubkey().find(0x82).data(), CVC().decode(adata).pubkey().find(0x81).data()).public_key()
-            pubkey.verify(signature, body, p, h)
-        else:
-            curve = find_domain(adata)
-            Q = CVC().decode(adata).pubkey().find(0x86).data()
-            if (curve and Q):
-                pubkey = ec.EllipticCurvePublicKey.from_encoded_point(curve, Q)
-                pubkey.verify(utils.encode_dss_signature(int.from_bytes(signature[:len(signature)//2],'big'), int.from_bytes(signature[len(signature)//2:],'big')), body, ec.ECDSA(h))
-            else:
-                return False
-    except InvalidSignature:
-        return False
-    return True
-
 def main(args):
     with open(args.file, 'rb') as f:
         cdata = f.read()
-        
+
     print('Certificate:')
     print(f'  Profile Identifier: {hexlify(CVC().decode(cdata).cpi()).decode()}')
     print(f'  CAR: {(CVC().decode(cdata).car()).decode()}')
@@ -143,7 +84,7 @@ def main(args):
         print(f'    Bytes: {hexlify(CVC().decode(cdata).role().find(0x53).data()).decode()}')
         print(f'  Since:   {bcd2date(CVC().decode(cdata).valid()).strftime("%Y-%m-%d")}')
         print(f'  Expires: {bcd2date(CVC().decode(cdata).expires()).strftime("%Y-%m-%d")}')
-    if (verify(cdata)):
+    if (CVC().decode(cdata).verify(cert_dir=cert_dir)):
         print('Inner signature is VALID')
         ret = True
     else:
@@ -154,7 +95,7 @@ def main(args):
             while (car != chr):
                 with open(os.path.join(cert_dir,car), 'rb') as f:
                     adata = f.read()
-                    ret = ret and verify(adata)
+                    ret = ret and CVC().decode(adata).verify(cert_dir=cert_dir)
                     chr = CVC().decode(adata).chr()
                     car = CVC().decode(adata).car()
         except FileNotFoundError:
@@ -163,13 +104,14 @@ def main(args):
     else:
         isreq = CVC().decode(cdata).is_req()
         if (isreq):
-            outret = verify(cdata, outer=True)
+            print(f'Outer CAR: {CVC().decode(cdata).outer_car().decode()}')
+            outret = CVC().decode(cdata).verify(cert_dir=cert_dir, outer=True)
             if (outret):
                 print('Outer signature is VALID')
             else:
                 print('Outer signature is NOT VALID')
             ret = ret and outret
-            
+
     if (ret):
         print('Certificate VALID')
     else:
@@ -181,4 +123,3 @@ def run():
 
 if __name__ == "__main__":
     run()
-    
