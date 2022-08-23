@@ -25,7 +25,7 @@ For more information, execute `cvc-create` or `cvc-print` with `--help` flag.
 
 Here some examples.
 
-### Create a PKI
+### Create a PKI
 
 `cvc-create` is the tool to create certificates or requests. Call `cvc-create --help` for a complete list of parameters.
 
@@ -56,7 +56,7 @@ cvc-create --chr=ZZATTERM00001 --scheme=ECDSA_SHA_256 --sign-key=ZZATTERM00001.p
 cvc-create --role=terminal --type=at --valid=60 --sign-key=ZZATDVCA00001.pkcs8 --sign-as=ZZATDVCA00001.cvcert --request=ZZATTERM00001.cvreq
 ```
 
-### Validate certificates and requests
+### Validate certificates and requests
 
 `cvc-print` is the tool for certificate validation and verification. Call `cvc-print --help` for a complete list of parameters.
 
