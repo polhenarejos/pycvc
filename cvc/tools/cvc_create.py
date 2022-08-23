@@ -24,6 +24,7 @@ from cryptography.hazmat.primitives.asymmetric import ec, rsa
 from cryptography.hazmat.primitives import serialization
 from cvc.terminal import Type, TypeIS, TypeAT, TypeST
 from cvc.certificates import CVC
+from cvc.utils import scheme_rsa
 from cvc import __version__, oid
 
 logger = logging.getLogger(__name__)
@@ -41,6 +42,7 @@ def parse_args():
     parser.add_argument('--outer-as', help='CV certificate for outer signature', metavar='FILENAME')
     parser.add_argument('--outer-key', help='Private key for outer signature', metavar='FILENAME')
     parser.add_argument('-p','--public-key', help='The public key contained in the certificate. If not provided, it is derived from the sign-key', metavar='FILENAME')
+    parser.add_argument('-q','--request', help='Generates a certificate based on a request', metavar='FILENAME')
     parser.add_argument('--out-key', help='File to store the generated private key [default CHR.pkcs8]', metavar='FILENAME')
     parser.add_argument('-s','--scheme', help='Signature scheme', choices=["ECDSA_SHA_1",
                                "ECDSA_SHA_224", "ECDSA_SHA_256",
@@ -48,7 +50,7 @@ def parse_args():
                                "RSA_v1_5_SHA_1", "RSA_v1_5_SHA_256",
                                "RSA_v1_5_SHA_512", "RSA_PSS_SHA_1",
                                "RSA_PSS_SHA_256", "RSA_PSS_SHA_512"])
-    parser.add_argument('-c','--chr', help='Certificate Holder Reference', required=True)
+    parser.add_argument('-c','--chr', help='Certificate Holder Reference')
     parser.add_argument('--write-dg17', help='Allow writing DG 17 (Normal Place of Residence)', action='store_true')
     parser.add_argument('--write-dg18', help='Allow writing DG 18 (Community ID)', action='store_true')
     parser.add_argument('--write-dg19', help='Allow writing DG 19 (Residence Permit I)', action='store_true')
@@ -155,6 +157,8 @@ def parse_as(a):
 
 def main(args):
     sign_key = load_private_key(args.sign_key)
+    puboid = None
+    chr = None
     if (args.public_key):
         with open(args.public_key, 'rb') as f:
             pubdata = f.read()
@@ -162,6 +166,17 @@ def main(args):
                 pub_key = serialization.load_der_public_key(pubdata)
             except ValueError:
                 pub_key = serialization.load_pem_public_key(pubdata)
+    elif (args.request):
+        with open(args.request, 'rb') as f:
+            data = f.read()
+            puboid = CVC().decode(data).pubkey().oid()
+            chr = CVC().decode(data).chr()
+            if (scheme_rsa(puboid)):
+                pub_key = rsa.RSAPublicNumbers(CVC().decode(data).pubkey().find(0x82).data(), CVC().decode(data).pubkey().find(0x81).data()).public_key()
+            else:
+                curve = CVC().decode(data).find_domain()
+                Q = CVC().decode(data).pubkey().find(0x86).data()
+                pub_key = ec.EllipticCurvePublicKey.from_encoded_point(curve, bytes(Q))
     else:
         if (args.sign_as and args.type and not args.outer_as and not args.outer_key):
             if (isinstance(sign_key, rsa.RSAPrivateKey)):
@@ -179,7 +194,8 @@ def main(args):
 
     typ = get_type(args.type, role, args)
 
-    puboid = oid.scheme2oid(args.scheme)
+    if (not puboid):
+        puboid = oid.scheme2oid(args.scheme)
     if (not puboid):
         if (isinstance(pub_key, rsa.RSAPublicKey)):
             puboid = oid.ID_TA_RSA_PSS_SHA256
@@ -192,14 +208,16 @@ def main(args):
         car = args.chr.encode()
         signscheme = puboid
 
+    if (not chr):
+        chr = args.chr.encode()
     if (args.outer_as and args.outer_key):
         outercar, outerscheme = parse_as(args.outer_as)
         outerkey = load_private_key(args.outer_key)
-        cert = CVC().req(pub_key, puboid, sign_key, signscheme, car=args.chr.encode(), chr=args.chr.encode(), outercar=outercar, outerkey=outerkey, outerscheme=outerscheme)
+        cert = CVC().req(pub_key, puboid, sign_key, signscheme, car=chr, chr=chr, outercar=outercar, outerkey=outerkey, outerscheme=outerscheme)
     else:
-        cert = CVC().cert(pub_key, puboid, sign_key, signscheme, car=car, chr=args.chr.encode(), role=typ, valid=args.valid if typ else None)
+        cert = CVC().cert(pub_key, puboid, sign_key, signscheme, car=car, chr=chr, role=typ, valid=args.valid if typ else None)
 
-    with open(args.out_cert if args.out_cert != None else args.chr+'.cvcert','wb') as f:
+    with open(args.out_cert if args.out_cert != None else chr.decode()+'.cvcert','wb') as f:
         f.write(cert.encode())
 
 def run():
