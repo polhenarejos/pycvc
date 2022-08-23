@@ -149,9 +149,8 @@ class CVC:
     def encode(self):
         return self.__a.encode()
 
-    def verify(self, outer=False, cert_dir=None):
+    def verify(self, outer=False, cert_dir=None, curve=None, dica=None):
         chr = self.chr()
-        adata = None
         if (outer is True):
             car = self.outer_car()
             signature = self.outer_signature()
@@ -161,17 +160,17 @@ class CVC:
             car = self.car()
             signature = self.signature()
             body = self.body().data(return_tag=True)
-        if (car != chr or outer is True):
+        if ((car != chr or outer is True) and dica is None):
             try:
                 with open(os.path.join(cert_dir,car), 'rb') as f:
-                    adata = f.read()
+                    dica = f.read()
             except FileNotFoundError:
                 print(f'[Warning: File {car.decode()} not found]')
                 return False
-        if (adata is None):
+        if (dica is None):
             puk = self.pubkey().data()
         else:
-            puk = CVC().decode(adata).pubkey().data()
+            puk = CVC().decode(dica).pubkey().data()
         scheme = ASN1().decode(puk).oid()
         h,p = get_hash_padding(scheme)
         try:
@@ -179,10 +178,11 @@ class CVC:
                 pubkey = rsa.RSAPublicNumbers(ASN1().decode(puk).find(0x82).data(), ASN1().decode(puk).find(0x81).data()).public_key()
                 pubkey.verify(signature, body, p, h)
             else:
-                curve = self.find_domain(cert_dir, outer)
+                if (not curve):
+                    curve = self.find_domain(cert_dir, outer)
                 Q = ASN1().decode(puk).find(0x86).data()
                 if (curve and Q):
-                    pubkey = ec.EllipticCurvePublicKey.from_encoded_point(curve, Q)
+                    pubkey = ec.EllipticCurvePublicKey.from_encoded_point(curve, bytes(Q))
                     pubkey.verify(utils.encode_dss_signature(int.from_bytes(signature[:len(signature)//2],'big'), int.from_bytes(signature[len(signature)//2:],'big')), body, ec.ECDSA(h))
                 else:
                     return False
