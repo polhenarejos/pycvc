@@ -190,7 +190,7 @@ class CVC:
             return False
         return True
 
-    def find_domain(self, cert_dir, outer=False):
+    def find_domain(self, cert_dir='', outer=False):
         adata = self.encode()
         try:
             P = CVC().decode(adata).pubkey().find(0x81) if outer is False else None
