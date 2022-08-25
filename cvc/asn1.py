@@ -37,7 +37,7 @@ class ASN1:
         return bytearray([0x80+len(b)]) + b
 
     def make_tag(tag, b):
-        return to_bytes(tag) + ASN1.calculate_len(len(b)) + b
+        return to_bytes(tag) + ASN1.calculate_len(len(b)) + bytearray(b)
 
     def make_context(tag, n):
         return ASN1.make_tag(tag, to_bytes(n))
@@ -72,7 +72,7 @@ class ASN1:
         return self._buffer
 
     def decode(self, data, encoding_type = DER):
-        self._buffer = data
+        self._buffer = bytearray(data)
         return self
 
     def all(self):

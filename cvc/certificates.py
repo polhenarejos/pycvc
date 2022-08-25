@@ -162,7 +162,7 @@ class CVC:
             body = self.body().data(return_tag=True)
         if ((car != chr or outer is True) and dica is None):
             try:
-                with open(os.path.join(cert_dir,car), 'rb') as f:
+                with open(os.path.join(cert_dir,bytes(car)), 'rb') as f:
                     dica = f.read()
             except FileNotFoundError:
                 print(f'[Warning: File {car.decode()} not found]')
@@ -202,7 +202,7 @@ class CVC:
                 if (not car or outer is False):
                     car = CVC().decode(adata).car()
                 chr = CVC().decode(adata).chr()
-                with open(os.path.join(cert_dir,car), 'rb') as f:
+                with open(os.path.join(cert_dir,bytes(car)), 'rb') as f:
                     adata = f.read()
                     P = CVC().decode(adata).pubkey().find(0x81)
                 if (P):

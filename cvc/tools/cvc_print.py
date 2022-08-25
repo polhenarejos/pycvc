@@ -93,7 +93,7 @@ def main(args):
     if (car != chr):
         try:
             while (car != chr):
-                with open(os.path.join(cert_dir,car), 'rb') as f:
+                with open(os.path.join(cert_dir,bytes(car)), 'rb') as f:
                     adata = f.read()
                     ret = ret and CVC().decode(adata).verify(cert_dir=cert_dir)
                     chr = CVC().decode(adata).chr()
