@@ -86,9 +86,9 @@ class CVC:
             dom = ec_domain(pubkey.public_numbers().curve)
             Y = pubkey.public_bytes(Encoding.X962, PublicFormat.UncompressedPoint)
             if (full):
-                pubctx = [dom.P, dom.A, dom.B, dom.G, dom.O, Y, dom.F]
+                pubctx = {1: dom.P, 2: dom.A, 3: dom.B, 4: dom.G, 5: dom.O, 6: Y, 7: dom.F}
             else:
-                pubctx = [None, None, None, None, None, Y, None]
+                pubctx = {6: Y}
         self.__a = self.__a.add_object(0x7f49, scheme, pubctx)
         return self
 

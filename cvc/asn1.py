@@ -52,10 +52,12 @@ class ASN1:
         self._append_buffer(ASN1.make_tag(tag, b))
         return self
 
-    def add_context(self, b):
-        self._context_counter = self._context_counter + 1
+    def add_context(self, b, idx=None):
+        if (idx is None):
+            self._context_counter = self._context_counter + 1
+            idx = self._context_counter
         if (b != None):
-            return self.add_tag(ASN1._TAG_CONTEXT + self._context_counter, b)
+            return self.add_tag(ASN1._TAG_CONTEXT + idx, b)
         return self
 
     def add_oid(self, b):
@@ -63,8 +65,8 @@ class ASN1:
 
     def add_object(self, tag, oid, ctxs):
         ta = ASN1().add_oid(oid)
-        for c in ctxs:
-            ta.add_context(c)
+        for idx, c in ctxs.items() if isinstance(ctxs, dict) else enumerate(ctxs):
+            ta.add_context(c, idx)
         self.add_tag(tag, ta.encode())
         return self
 
