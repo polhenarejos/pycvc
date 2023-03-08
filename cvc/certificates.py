@@ -41,7 +41,17 @@ class CVC:
     def body(self, pubkey=None, scheme=None, car=None, chr=None, role=None, valid=None, since=None, extensions=None):
         if (self.__data != None):
             return self.cert().find(0x7f4e)
-        self.__a = ASN1().add_tag(0x7f4e, self.cpi().car(car).pubkey(pubkey, scheme, car == chr).chr(chr).role(role).valid(valid, since).encode())
+        self.__a = ASN1().add_tag(0x7f4e, self.cpi().car(car).pubkey(pubkey, scheme, car == chr).chr(chr).role(role).valid(valid, since).extensions(extensions).encode())
+        return self
+
+    def extensions(self, extensions=None):
+        if (self.__data != None):
+            return self.body().find(0x65)
+        if (extensions != None):
+            data = b''
+            for ext in extensions:
+                data += ASN1().add_object(tag=ext['tag'], oid=ext['oid'], ctxs=ext['contexts']).encode()
+            self.__a = self.__a.add_tag(0x65, data)
         return self
 
     def car(self, car=None):
