@@ -48,7 +48,7 @@ cvc-create --role=dv_domestic --type=at --chr=ZZATDVCA00001 --valid=180 --sign-k
 ```bash
 openssl ecparam -out ZZATTERM00001.pem -name prime256v1 -genkey
 openssl pkcs8 -topk8 -nocrypt -in ZZATTERM00001.pem -outform DER -out ZZATTERM00001.pkcs8
-cvc-create --chr=ZZATTERM00001 --scheme=ECDSA_SHA_256 --sign-key=ZZATTERM00001.pkcs8 --out-cert=ZZATTERM00001.cvreq
+cvc-create --chr=ZZATTERM00001 --scheme=ECDSA_SHA_256 --sign-key=ZZATTERM00001.pkcs8 --out-cert=ZZATTERM00001.cvreq --req-car=ZZATDVCA00001
 ```
 
 4- Sign a certificate request
