@@ -35,12 +35,11 @@ def parse_args():
     parser.add_argument('-o','--out-cert', help='Generated certificate file', metavar='FILENAME')
     parser.add_argument('-r','--role', help='The role of entity', choices=['cvca','dv_domestic','dv_foreign','terminal'])
     parser.add_argument('-t','--type', help='The type of terminal. If not provided, it creates a certificate request', choices=['at','is','st'])
-    parser.add_argument('--chat', help='Raw Card Holder Authorization Template')
     parser.add_argument('--valid', help='Days of validity since today or date provided by --since', default=90)
     parser.add_argument('-k','--sign-key', help='Private key to sign the certificate.', required=True, metavar='FILENAME')
-    parser.add_argument('--sign-as', help='CV certificate of signing entity. If not provided, the certificate is self-signed', metavar='FILENAME')
-    parser.add_argument('--outer-as', help='CV certificate for outer signature', metavar='FILENAME')
-    parser.add_argument('--outer-key', help='Private key for outer signature', metavar='FILENAME')
+    parser.add_argument('--sign-as', help='CV certificate of signing entity. If not provided, the certificate is self-signed [generates a certificate]', metavar='FILENAME')
+    parser.add_argument('--outer-as', help='Outer certificate for CV request', metavar='FILENAME')
+    parser.add_argument('--outer-key', help='Private key for outer signature of CV request', metavar='FILENAME')
     parser.add_argument('-p','--public-key', help='The public key contained in the certificate. If not provided, it is derived from the sign-key', metavar='FILENAME')
     parser.add_argument('-q','--request', help='Generates a certificate based on a request', metavar='FILENAME')
     parser.add_argument('--out-key', help='File to store the generated private key [default CHR.pkcs8]', metavar='FILENAME')
@@ -51,6 +50,7 @@ def parse_args():
                                "RSA_v1_5_SHA_512", "RSA_PSS_SHA_1",
                                "RSA_PSS_SHA_256", "RSA_PSS_SHA_512"])
     parser.add_argument('-c','--chr', help='Certificate Holder Reference')
+    parser.add_argument('-a','--req-car', help='Certificate Authority Reference expected for CV request [generates a request]')
     parser.add_argument('--write-dg17', help='Allow writing DG 17 (Normal Place of Residence)', action='store_true')
     parser.add_argument('--write-dg18', help='Allow writing DG 18 (Community ID)', action='store_true')
     parser.add_argument('--write-dg19', help='Allow writing DG 19 (Residence Permit I)', action='store_true')
@@ -202,22 +202,30 @@ def main(args):
         elif (isinstance(pub_key, ec.EllipticCurvePublicKey)):
             puboid = oid.ID_TA_ECDSA_SHA_256
 
-    if (args.sign_as and typ and not args.outer_as and not args.outer_key):
+    if (args.sign_as and typ and not args.outer_as and not args.outer_key): # Cert
         car, signscheme = parse_as(args.sign_as)
-    else:
-        car = args.chr.encode()
+    else: # Req
+        if (args.req_car):
+            car = args.req_car.encode()
+        else:
+            car = args.chr.encode()
         signscheme = puboid
 
     if (not chr):
         chr = args.chr.encode()
-    if (args.outer_as and args.outer_key):
-        outercar, outerscheme = parse_as(args.outer_as)
-        outerkey = load_private_key(args.outer_key)
-        cert = CVC().req(pub_key, puboid, sign_key, signscheme, car=chr, chr=chr, outercar=outercar, outerkey=outerkey, outerscheme=outerscheme)
+    if (args.req_car or (args.outer_as and args.outer_key)):
+        if (args.outer_as and args.outer_key):
+            outercar, outerscheme = parse_as(args.outer_as)
+            outerkey = load_private_key(args.outer_key)
+        else:
+            outercar,outerscheme,outerkey = None,None,None
+        cert = CVC().req(pub_key, puboid, sign_key, signscheme, car=car, chr=chr, outercar=outercar, outerkey=outerkey, outerscheme=outerscheme)
+        ext = 'cvreq'
     else:
         cert = CVC().cert(pub_key, puboid, sign_key, signscheme, car=car, chr=chr, role=typ, valid=args.valid if typ else None)
+        ext = 'cvcert'
 
-    with open(args.out_cert if args.out_cert != None else chr.decode()+'.cvcert','wb') as f:
+    with open(args.out_cert if args.out_cert != None else chr.decode()+'.'+ext,'wb') as f:
         f.write(cert.encode())
 
 def run():

@@ -38,10 +38,10 @@ class CVC:
         self.__a = ASN1().decode(self.__data)
         return self
 
-    def body(self, pubkey=None, scheme=None, car=None, chr=None, role=None, valid=None, since=None, extensions=None):
+    def body(self, pubkey=None, scheme=None, car=None, chr=None, role=None, valid=None, since=None, extensions=None, req=False):
         if (self.__data != None):
             return self.cert().find(0x7f4e)
-        self.__a = ASN1().add_tag(0x7f4e, self.cpi().car(car).pubkey(pubkey, scheme, car == chr).chr(chr).role(role).valid(valid, since).extensions(extensions).encode())
+        self.__a = ASN1().add_tag(0x7f4e, self.cpi().car(car).pubkey(pubkey, scheme, req).chr(chr).role(role).valid(valid, since).extensions(extensions).encode())
         return self
 
     def extensions(self, extensions=None):
@@ -131,10 +131,10 @@ class CVC:
         self.__a = self.__a.add_tag(0x5f37, bytearray(signature))
         return self
 
-    def cert(self, pubkey=None, scheme=None, signkey=None, signscheme=None, car=None, chr=None, role=None, valid=None, since=None, extensions=None):
+    def cert(self, pubkey=None, scheme=None, signkey=None, signscheme=None, car=None, chr=None, role=None, valid=None, since=None, extensions=None, req=False):
         if (self.__data != None):
             return self.req().find(0x7f21)
-        self.__a = ASN1().add_tag(0x7f21, self.body(pubkey, scheme, car, chr, role, valid, since, extensions).sign(signkey, signscheme).encode())
+        self.__a = ASN1().add_tag(0x7f21, self.body(pubkey, scheme, car, chr, role, valid, since, extensions, req or chr==car).sign(signkey, signscheme).encode())
         return self
 
     def req(self, pubkey=None, scheme=None, signkey=None, signscheme=None, car=None, chr=None, outercar=None, outerkey=None, outerscheme=None, extensions=None):
@@ -143,7 +143,7 @@ class CVC:
             if (aut):
                 return aut
             return ASN1().decode(self.__data)
-        cert = self.cert(pubkey, scheme, signkey, signscheme, car, chr, role=None, valid=None, since=None, extensions=extensions)
+        cert = self.cert(pubkey, scheme, signkey, signscheme, car, chr, role=None, valid=None, since=None, extensions=extensions, req=True)
         if (outercar != None and outerkey != None and outerscheme != None):
             self.__a = ASN1().add_tag(0x67, cert.car(outercar).sign(outerkey, outerscheme).encode())
         return self
@@ -151,7 +151,7 @@ class CVC:
     def is_req(self):
         if (self.__data != None):
             b = self.__a
-            ret = self.__a.find(0x67) != None
+            ret = self.__a.find(0x67) != None or self.body().find(0x5f25) == None
             self.__a = b
             return ret
         return False

@@ -84,25 +84,28 @@ def main(args):
         print(f'    Bytes: {hexlify(CVC().decode(cdata).role().find(0x53).data()).decode()}')
         print(f'  Since:   {bcd2date(CVC().decode(cdata).valid()).strftime("%Y-%m-%d")}')
         print(f'  Expires: {bcd2date(CVC().decode(cdata).expires()).strftime("%Y-%m-%d")}')
-    if (CVC().decode(cdata).verify(cert_dir=cert_dir)):
+    isreq = CVC().decode(cdata).is_req()
+    if (CVC().decode(cdata).verify(cert_dir=cert_dir, dica=cdata if isreq else None)):
         print('Inner signature is VALID')
         ret = True
     else:
         print('Inner signature is NOT VALID')
         ret = False
     if (car != chr):
-        try:
-            while (car != chr):
-                with open(os.path.join(cert_dir,bytes(car)), 'rb') as f:
-                    adata = f.read()
-                    ret = ret and CVC().decode(adata).verify(cert_dir=cert_dir)
-                    chr = CVC().decode(adata).chr()
-                    car = CVC().decode(adata).car()
-        except FileNotFoundError:
-            print(f'[Warning: File {car.decode()} not found]')
-            ret = False
+        if (isreq):
+            ret = CVC().decode(cdata).verify(cert_dir=cert_dir, dica=cdata)
+        else:
+            try:
+                while (car != chr):
+                    with open(os.path.join(cert_dir,bytes(car)), 'rb') as f:
+                        adata = f.read()
+                        ret = ret and CVC().decode(adata).verify(cert_dir=cert_dir)
+                        chr = CVC().decode(adata).chr()
+                        car = CVC().decode(adata).car()
+            except FileNotFoundError:
+                print(f'[Warning: File {car.decode()} not found]')
+                ret = False
     else:
-        isreq = CVC().decode(cdata).is_req()
         if (isreq):
             print(f'Outer CAR: {CVC().decode(cdata).outer_car().decode()}')
             outret = CVC().decode(cdata).verify(cert_dir=cert_dir, outer=True)
