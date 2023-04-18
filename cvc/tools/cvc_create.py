@@ -172,7 +172,7 @@ def main(args):
             puboid = CVC().decode(data).pubkey().oid()
             chr = CVC().decode(data).chr()
             if (scheme_rsa(puboid)):
-                pub_key = rsa.RSAPublicNumbers(CVC().decode(data).pubkey().find(0x82).data(), CVC().decode(data).pubkey().find(0x81).data()).public_key()
+                pub_key = rsa.RSAPublicNumbers(int.from_bytes(CVC().decode(data).pubkey().find(0x82).data(), 'big'), int.from_bytes(CVC().decode(data).pubkey().find(0x81).data(), 'big')).public_key()
             else:
                 curve = CVC().decode(data).find_domain()
                 Q = CVC().decode(data).pubkey().find(0x86).data()
