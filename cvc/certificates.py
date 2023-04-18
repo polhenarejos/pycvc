@@ -81,7 +81,7 @@ class CVC:
         if (self.__data != None):
             return self.body().find(0x7f49)
         if (isinstance(pubkey, rsa.RSAPublicKey)):
-            pubctx = [to_bytes(pubkey.public_numbers().n), to_bytes(pubkey.public_numbers().e)]
+            pubctx = {1: to_bytes(pubkey.public_numbers().n), 2: to_bytes(pubkey.public_numbers().e)}
         elif (isinstance(pubkey, ec.EllipticCurvePublicKey)):
             dom = ec_domain(pubkey.public_numbers().curve)
             Y = pubkey.public_bytes(Encoding.X962, PublicFormat.UncompressedPoint)
