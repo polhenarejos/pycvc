@@ -36,7 +36,7 @@ class Type:
         for ix, attr in enumerate(self._args):
             x = x + 2**(total-ix-1) * getattr(self, attr, 0)
         x = x + self.role * 2**(total)
-        return to_bytes(x)
+        return x.to_bytes((total + 7) // 8, 'big')
 
 class TypeIS(Type):
     OID = oid.ID_IS
