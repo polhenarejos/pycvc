@@ -185,7 +185,7 @@ class CVC:
         h,p = get_hash_padding(scheme)
         try:
             if (scheme_rsa(scheme)):
-                pubkey = rsa.RSAPublicNumbers(ASN1().decode(puk).find(0x82).data(), ASN1().decode(puk).find(0x81).data()).public_key()
+                pubkey = rsa.RSAPublicNumbers(int.from_bytes(ASN1().decode(puk).find(0x82).data(), 'big'), int.from_bytes(ASN1().decode(puk).find(0x81).data(), 'big')).public_key()
                 pubkey.verify(signature, body, p, h)
             else:
                 if (not curve):
