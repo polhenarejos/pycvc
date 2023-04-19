@@ -25,7 +25,7 @@ For more information, execute `cvc-create` or `cvc-print` with `--help` flag.
 
 Here some examples.
 
-### Create a PKI
+### Create a PKI with ECC
 
 `cvc-create` is the tool to create certificates or requests. Call `cvc-create --help` for a complete list of parameters.
 
@@ -49,6 +49,37 @@ cvc-create --role=dv_domestic --type=at --chr=ZZATDVCA00001 --valid=180 --sign-k
 openssl ecparam -out ZZATTERM00001.pem -name prime256v1 -genkey
 openssl pkcs8 -topk8 -nocrypt -in ZZATTERM00001.pem -outform DER -out ZZATTERM00001.pkcs8
 cvc-create --chr=ZZATTERM00001 --scheme=ECDSA_SHA_256 --sign-key=ZZATTERM00001.pkcs8 --out-cert=ZZATTERM00001.cvreq --req-car=ZZATDVCA00001
+```
+
+4- Sign a certificate request
+```bash
+cvc-create --role=terminal --type=at --valid=60 --sign-key=ZZATDVCA00001.pkcs8 --sign-as=ZZATDVCA00001.cvcert --request=ZZATTERM00001.cvreq
+```
+
+### Create a PKI with RSA
+
+`cvc-create` is the tool to create certificates or requests. Call `cvc-create --help` for a complete list of parameters.
+
+1- Setup the CA:
+```bash
+openssl genrsa -out ZZATCVCA00001.pem 3072
+openssl pkcs8 -topk8 -nocrypt -in ZZATCVCA00001.pem -outform DER -out ZZATCVCA00001.pkcs8
+cvc-create --role=cvca --type=at --chr=ZZATCVCA00001 --valid=365 --sign-key=ZZATCVCA00001.pkcs8 --scheme=RSA_v1_5_SHA_256
+```
+
+2- Setup the DV:
+```bash
+openssl genrsa -out ZZATDVCA00001.pem 2048
+openssl pkcs8 -topk8 -nocrypt -in ZZATDVCA00001.pem -outform DER -out ZZATDVCA00001.pkcs8
+openssl rsa -in ZZATDVCA00001.pem -out ZZATDVCA00001.pub -pubout -outform DER
+cvc-create --role=dv_domestic --type=at --chr=ZZATDVCA00001 --valid=180 --sign-key=ZZATCVCA00001.pkcs8 --scheme=RSA_v1_5_SHA_256 --sign-as=ZZATCVCA00001.cvcert --public-key=ZZATDVCA00001.pub
+```
+
+3- Create a certificate request
+```bash
+openssl genrsa -out ZZATTERM00001.pem 2048
+openssl pkcs8 -topk8 -nocrypt -in ZZATTERM00001.pem -outform DER -out ZZATTERM00001.pkcs8
+cvc-create --chr=ZZATTERM00001 --scheme=RSA_v1_5_SHA_256 --sign-key=ZZATTERM00001.pkcs8 --out-cert=ZZATTERM00001.cvreq --req-car=ZZATDVCA00001
 ```
 
 4- Sign a certificate request
