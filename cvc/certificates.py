@@ -186,7 +186,7 @@ class CVC:
         try:
             if (scheme_rsa(scheme)):
                 pubkey = rsa.RSAPublicNumbers(int.from_bytes(ASN1().decode(puk).find(0x82).data(), 'big'), int.from_bytes(ASN1().decode(puk).find(0x81).data(), 'big')).public_key()
-                pubkey.verify(signature, body, p, h)
+                pubkey.verify(bytes(signature), bytes(body), p, h)
             else:
                 if (not curve):
                     curve = self.find_domain(cert_dir, outer)
