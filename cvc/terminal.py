@@ -41,7 +41,7 @@ class Type:
 class TypeIS(Type):
     OID = oid.ID_IS
     name = 'TypeIS'
-    _args = ('rfu5', 'rfu4', 'rfu3', 'rfu2', 'iris', 'finger')
+    _args = ('rfu5', 'rfu4', 'rfu3', 'rfu2', 'read_iris', 'read_fingerprint')
     def __init__(self, role, **kwargs):
         for attr in self._args:
             setattr(self, attr, kwargs.get(attr, 0))
@@ -59,7 +59,7 @@ class TypeAT(Type):
 class TypeST(Type):
     OID = oid.ID_ST
     name = 'TypeST'
-    _args = ('rfu5', 'rfu4', 'rfu3', 'rfu2', 'gen_qualified', 'gen_sig')
+    _args = ('rfu5', 'rfu4', 'rfu3', 'rfu2', 'gen_qual_sig', 'gen_sig')
     def __init__(self, role, **kwargs):
         for attr in self._args:
             setattr(self, attr, kwargs.get(attr, 0))
