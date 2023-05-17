@@ -27,6 +27,8 @@ class Type:
     DV_foreign = 1
     Terminal = 0
 
+    __chat = 0
+
     def __init__(self, role):
         self.role = role
 
@@ -36,7 +38,14 @@ class Type:
         for ix, attr in enumerate(self._args):
             x = x + 2**(total-ix-1) * getattr(self, attr, 0)
         x = x + self.role * 2**(total)
+        x |= self.__chat
         return x.to_bytes((total + 7) // 8, 'big')
+
+    def chat(self, chat):
+        if (chat):
+            if (isinstance(chat, str)):
+                chat = int(chat, 2)
+            self.__chat = chat
 
 class TypeIS(Type):
     OID = oid.ID_IS
