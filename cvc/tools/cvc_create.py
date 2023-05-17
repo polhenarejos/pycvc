@@ -51,6 +51,7 @@ def parse_args():
                                "RSA_PSS_SHA_256", "RSA_PSS_SHA_512"])
     parser.add_argument('-c','--chr', help='Certificate Holder Reference')
     parser.add_argument('-a','--req-car', help='Certificate Authority Reference expected for CV request [generates a request]')
+    parser.add_argument('--chat', help='CHAT bits for terminal (binary base)', metavar='BITS')
     parser.add_argument('--write-dg17', help='Allow writing DG 17 (Normal Place of Residence)', action='store_true')
     parser.add_argument('--write-dg18', help='Allow writing DG 18 (Community ID)', action='store_true')
     parser.add_argument('--write-dg19', help='Allow writing DG 19 (Residence Permit I)', action='store_true')
@@ -193,6 +194,8 @@ def main(args):
     role = get_role(args.role)
 
     typ = get_type(args.type, role, args)
+
+    typ.chat(args.chat)
 
     if (not puboid):
         puboid = oid.scheme2oid(args.scheme)
