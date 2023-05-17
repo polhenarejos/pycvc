@@ -98,7 +98,7 @@ def parse_args():
     parser.add_argument('--gen-sig', help='Allow generated electronic signature', action='store_true')
 
     parser.add_argument('--read-iris', help='Read access to ePassport application: DG 4 (Iris)', action='store_true')
-    parser.add_argument('--read-finger', help='Read access to ePassport application: DG 3 (Fingerprint)', action='store_true')
+    parser.add_argument('--read-fingerprint', help='Read access to ePassport application: DG 3 (Fingerprint)', action='store_true')
 
     if ('--version' in sys.argv):
         print('Card Verifiable Certificate tools for Python')
