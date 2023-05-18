@@ -38,10 +38,10 @@ class CVC:
         self.__a = ASN1().decode(self.__data)
         return self
 
-    def body(self, pubkey=None, scheme=None, car=None, chr=None, role=None, valid=None, since=None, extensions=None, req=False):
+    def body(self, pubkey=None, scheme=None, car=None, chr=None, role=None, days=None, since=None, extensions=None, req=False):
         if (self.__data != None):
             return self.cert().find(0x7f4e)
-        self.__a = ASN1().add_tag(0x7f4e, self.cpi().car(car).pubkey(pubkey, scheme, req).chr(chr).role(role).valid(valid, since).extensions(extensions).encode())
+        self.__a = ASN1().add_tag(0x7f4e, self.cpi().car(car).pubkey(pubkey, scheme, req).chr(chr).role(role).valid(days=days, since=since).extensions(extensions).encode())
         return self
 
     def extensions(self, extensions=None):
@@ -99,13 +99,13 @@ class CVC:
             self.__a = self.__a.add_tag(0x7f4c, ASN1().add_oid(role.OID).add_tag(0x53, role.to_bytes()).encode())
         return self
 
-    def valid(self, valid=None, since=None):
+    def valid(self, days=None, since=None):
         if (self.__data != None):
             return self.body().find(0x5f25).data()
-        if (valid != None):
-            if (since == None):
+        if (days):
+            if (not since):
                 since = datetime.datetime.now().strftime("%y%m%d")
-            until = (datetime.datetime.strptime(since, "%y%m%d") + datetime.timedelta(days = int(valid))).strftime("%y%m%d")
+            until = (datetime.datetime.strptime(since, "%y%m%d") + datetime.timedelta(days = int(days))).strftime("%y%m%d")
             self.__a = self.__a.add_tag(0x5f25, bcd(since)).add_tag(0x5f24, bcd(until))
         return self
 
@@ -131,10 +131,10 @@ class CVC:
         self.__a = self.__a.add_tag(0x5f37, bytearray(signature))
         return self
 
-    def cert(self, pubkey=None, scheme=None, signkey=None, signscheme=None, car=None, chr=None, role=None, valid=None, since=None, extensions=None, req=False):
+    def cert(self, pubkey=None, scheme=None, signkey=None, signscheme=None, car=None, chr=None, role=None, days=None, since=None, extensions=None, req=False):
         if (self.__data != None):
             return self.req().find(0x7f21)
-        self.__a = ASN1().add_tag(0x7f21, self.body(pubkey, scheme, car, chr, role, valid, since, extensions, req or chr==car).sign(signkey, signscheme).encode())
+        self.__a = ASN1().add_tag(0x7f21, self.body(pubkey, scheme, car, chr, role, days, since, extensions, req or chr==car).sign(signkey, signscheme).encode())
         return self
 
     def req(self, pubkey=None, scheme=None, signkey=None, signscheme=None, car=None, chr=None, outercar=None, outerkey=None, outerscheme=None, extensions=None):
@@ -143,7 +143,7 @@ class CVC:
             if (aut):
                 return aut
             return ASN1().decode(self.__data)
-        cert = self.cert(pubkey, scheme, signkey, signscheme, car, chr, role=None, valid=None, since=None, extensions=extensions, req=True)
+        cert = self.cert(pubkey, scheme, signkey, signscheme, car, chr, role=None, days=None, since=None, extensions=extensions, req=True)
         if (outercar != None and outerkey != None and outerscheme != None):
             self.__a = ASN1().add_tag(0x67, cert.car(outercar).sign(outerkey, outerscheme).encode())
         return self

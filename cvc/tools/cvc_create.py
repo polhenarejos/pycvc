@@ -35,7 +35,8 @@ def parse_args():
     parser.add_argument('-o','--out-cert', help='Generated certificate file', metavar='FILENAME')
     parser.add_argument('-r','--role', help='The role of entity', choices=['cvca','dv_domestic','dv_foreign','terminal'])
     parser.add_argument('-t','--type', help='The type of terminal. If not provided, it creates a certificate request', choices=['at','is','st'])
-    parser.add_argument('--valid', help='Days of validity since today or date provided by --since', default=90)
+    parser.add_argument('--days', help='Days of validity since today (or since --since)', default=90)
+    parser.add_argument('--since', help='Certificate effective date (use with caution) [in YYMMDD format]', metavar='YYMMDD')
     parser.add_argument('-k','--sign-key', help='Private key to sign the certificate.', required=True, metavar='FILENAME')
     parser.add_argument('--sign-as', help='CV certificate of signing entity. If not provided, the certificate is self-signed [generates a certificate]', metavar='FILENAME')
     parser.add_argument('--outer-as', help='Outer certificate for CV request', metavar='FILENAME')
@@ -225,7 +226,7 @@ def main(args):
         cert = CVC().req(pub_key, puboid, sign_key, signscheme, car=car, chr=chr, outercar=outercar, outerkey=outerkey, outerscheme=outerscheme)
         ext = 'cvreq'
     else:
-        cert = CVC().cert(pub_key, puboid, sign_key, signscheme, car=car, chr=chr, role=typ, valid=args.valid if typ else None)
+        cert = CVC().cert(pub_key, puboid, sign_key, signscheme, car=car, chr=chr, role=typ, days=args.days if typ else None, since=args.since if typ else None)
         ext = 'cvcert'
 
     with open(args.out_cert if args.out_cert != None else chr.decode()+'.'+ext,'wb') as f:
