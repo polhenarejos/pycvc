@@ -196,7 +196,8 @@ def main(args):
 
     typ = get_type(args.type, role, args)
 
-    typ.chat(args.chat)
+    if (typ):
+        typ.chat(args.chat)
 
     if (not puboid):
         puboid = oid.scheme2oid(args.scheme)
