@@ -24,7 +24,7 @@ from cryptography.hazmat.primitives.asymmetric import ec, rsa, utils
 from cryptography.exceptions import InvalidSignature
 import datetime
 from cvc.utils import to_bytes, bcd, get_hash_padding, scheme_rsa
-from cvc.ec_curves import ec_domain, find_curve
+from cvc.ec_curves import EcCurve
 from cvc.asn1 import ASN1
 import os
 
@@ -83,7 +83,7 @@ class CVC:
         if (isinstance(pubkey, rsa.RSAPublicKey)):
             pubctx = {1: to_bytes(pubkey.public_numbers().n), 2: to_bytes(pubkey.public_numbers().e)}
         elif (isinstance(pubkey, ec.EllipticCurvePublicKey)):
-            dom = ec_domain(pubkey.public_numbers().curve)
+            dom = EcCurve.from_name(pubkey.public_numbers().curve.name)
             Y = pubkey.public_bytes(Encoding.X962, PublicFormat.UncompressedPoint)
             if (full):
                 pubctx = {1: dom.P, 2: dom.A, 3: dom.B, 4: dom.G, 5: dom.O, 6: Y, 7: dom.F}
@@ -205,7 +205,7 @@ class CVC:
         try:
             P = CVC().decode(adata).pubkey().find(0x81) if outer is False else None
             if (P):
-                return find_curve(P.data())
+                return EcCurve.to_crypto(EcCurve.from_P(P.data()))
             depth = 10
             while (P == None and depth > 0):
                 car = CVC().decode(adata).outer_car()
@@ -216,7 +216,7 @@ class CVC:
                     adata = f.read()
                     P = CVC().decode(adata).pubkey().find(0x81)
                 if (P):
-                    return find_curve(P.data())
+                    return EcCurve.to_crypto(EcCurve.from_P(P.data()))
                 depth -= 1
         except FileNotFoundError:
             print(f'[Warning: File {car.decode()} not found]')
