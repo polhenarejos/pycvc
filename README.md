@@ -11,6 +11,8 @@ pycvc implements the specifications of BSI TR 03110 to create CV certificates an
 
 pycvc can be used to make a CV request and deploy a PKI based on CVC.
 
+pycvc also supports ECDH keys such as Curve25519 and Curve448.
+
 ## Install
 
 ```
