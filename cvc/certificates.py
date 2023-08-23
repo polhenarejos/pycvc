@@ -20,7 +20,7 @@
 
 from binascii import hexlify
 from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
-from cryptography.hazmat.primitives.asymmetric import ec, rsa, utils
+from cryptography.hazmat.primitives.asymmetric import ec, rsa, utils, x25519, x448
 from cryptography.exceptions import InvalidSignature
 import datetime
 from cvc.utils import to_bytes, bcd, get_hash_padding, scheme_rsa
@@ -89,6 +89,14 @@ class CVC:
                 pubctx = {1: dom.P, 2: dom.A, 3: dom.B, 4: dom.G, 5: dom.O, 6: Y, 7: dom.F}
             else:
                 pubctx = {6: Y}
+        elif (isinstance(pubkey, x25519.X25519PublicKey) or isinstance(pubkey, x448.X448PublicKey)):
+            if (isinstance(pubkey, x25519.X25519PublicKey)):
+                name = 'curve25519'
+            elif (isinstance(pubkey, x448.X448PublicKey)):
+                name = 'curve448'
+            dom = EcCurve.from_name(name)
+            Y = pubkey.public_bytes(Encoding.Raw, PublicFormat.Raw)
+            pubctx = {1: dom.P, 2: dom.O, 3: dom.G, 4: Y}
         self.__a = self.__a.add_object(0x7f49, scheme, pubctx)
         return self
 
