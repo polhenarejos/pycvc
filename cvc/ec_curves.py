@@ -151,7 +151,7 @@ class Curve25519(EcCurve):
     P = bytearray(unhexlify("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffed"))
     A = bytearray(unhexlify("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffec"))
     B = bytearray(unhexlify("01"))
-    G = bytearray(unhexlify("040920ae19a1b8a086b4e01edd2c7748d14c923d4d7e6d7c61b229e9c5a27eced3d9"))
+    G = bytearray(unhexlify("09"))
     O = bytearray(unhexlify("1000000000000000000000000000000014def9dea2f79cd65812631a5cf5d3ed"))
     F = bytearray(unhexlify("08"))
 
@@ -159,6 +159,6 @@ class Curve448(EcCurve):
     P = bytearray(unhexlify("fffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffffffffffffffffffffffffffffffffffffffffffffffffffff"))
     A = bytearray(unhexlify("0262a6"))
     B = bytearray(unhexlify("01"))
-    G = bytearray(unhexlify("04057d235d1295f5b1f66c98ab6e58326fcecbae5d34f55545d060f75dc28df3f6edb8027e2346430d211312c4b150677af76fd7223d457b5b1a"))
+    G = bytearray(unhexlify("05"))
     O = bytearray(unhexlify("3fffffffffffffffffffffffffffffffffffffffffffffffffffffff7cca23e9c44edb49aed63690216cc2728dc58f552378c292ab5844f3"))
     F = bytearray(unhexlify("04"))
