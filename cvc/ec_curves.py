@@ -149,9 +149,9 @@ class SECP256K1(EcCurve):
 
 class Curve25519(EcCurve):
     P = bytearray(unhexlify("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffed"))
-    A = bytearray(unhexlify("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffec"))
+    A = bytearray(unhexlify("076d06"))
     B = bytearray(unhexlify("01"))
-    G = bytearray(unhexlify("09"))
+    G = bytearray(unhexlify("0900000000000000000000000000000000000000000000000000000000000000"))
     O = bytearray(unhexlify("1000000000000000000000000000000014def9dea2f79cd65812631a5cf5d3ed"))
     F = bytearray(unhexlify("08"))
 
@@ -159,6 +159,22 @@ class Curve448(EcCurve):
     P = bytearray(unhexlify("fffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffffffffffffffffffffffffffffffffffffffffffffffffffff"))
     A = bytearray(unhexlify("0262a6"))
     B = bytearray(unhexlify("01"))
-    G = bytearray(unhexlify("05"))
+    G = bytearray(unhexlify("0500000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"))
+    O = bytearray(unhexlify("3fffffffffffffffffffffffffffffffffffffffffffffffffffffff7cca23e9c44edb49aed63690216cc2728dc58f552378c292ab5844f3"))
+    F = bytearray(unhexlify("04"))
+
+class Ed25519(EcCurve):
+    P = bytearray(unhexlify("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffed"))
+    A = bytearray(unhexlify("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffec"))
+    B = bytearray(unhexlify("52036cee2b6ffe738cc740797779e89800700a4d4141d8ab75eb4dca135978a3"))
+    G = bytearray(unhexlify("6666666666666666666666666666666666666666666666666666666666666658"))
+    O = bytearray(unhexlify("1000000000000000000000000000000014def9dea2f79cd65812631a5cf5d3ed"))
+    F = bytearray(unhexlify("08"))
+
+class Ed448(EcCurve):
+    P = bytearray(unhexlify("fffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffffffffffffffffffffffffffffffffffffffffffffffffffff"))
+    A = bytearray(unhexlify("01"))
+    B = bytearray(unhexlify("d78b4bdc7f0daf19f24f38c29373a2ccad46157242a50f37809b1da3412a12e79ccc9c81264cfe9ad080997058fb61c4243cc32dbaa156b9"))
+    G = bytearray(unhexlify("7fffffffffffffffffffffffffffffffffffffffffffffffffffffff80000000000000000000000000000000000000000000000000000001"))
     O = bytearray(unhexlify("3fffffffffffffffffffffffffffffffffffffffffffffffffffffff7cca23e9c44edb49aed63690216cc2728dc58f552378c292ab5844f3"))
     F = bytearray(unhexlify("04"))
