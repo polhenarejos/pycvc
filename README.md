@@ -25,9 +25,40 @@ pycvc can be used by importing the package or calling the command line tools `cv
 
 For more information, execute `cvc-create` or `cvc-print` with `--help` flag.
 
+**Supported algorithms**
+- RSA
+- ECDSA
+- EDDSA
+
+**Supported curves**
+- secp192r1 (prime192v1)
+- secp224r1
+- secp256r1 (prime256v1)
+- secp384r1
+- secp521r1
+- brainpoolP256r1
+- brainpoolP384r1
+- brainpoolP512r1
+- secp256k1
+- ed25519
+- ed448
+
+**Supported schemes**
+- ECDSA_SHA_1
+- ECDSA_SHA_224
+- ECDSA_SHA_256
+- ECDSA_SHA_384
+- ECDSA_SHA_512
+- RSA_v1_5_SHA_1
+- RSA_v1_5_SHA_256
+- RSA_v1_5_SHA_512
+- RSA_PSS_SHA_1
+- RSA_PSS_SHA_256
+- RSA_PSS_SHA_512
+
 Here some examples.
 
-### Create a PKI with ECC
+### Create a PKI with ECDSA
 
 `cvc-create` is the tool to create certificates or requests. Call `cvc-create --help` for a complete list of parameters.
 
