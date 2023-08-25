@@ -62,6 +62,14 @@ class SECP192R1(EcCurve):
     O = bytearray(unhexlify("FFFFFFFFFFFFFFFFFFFFFFFF99DEF836146BC9B1B4D22831"))
     F = bytearray(unhexlify("01"))
 
+class SECP224R1(EcCurve):
+    P = bytearray(unhexlify("ffffffffffffffffffffffffffffffff000000000000000000000001"))
+    A = bytearray(unhexlify("fffffffffffffffffffffffffffffffefffffffffffffffffffffffe"))
+    B = bytearray(unhexlify("b4050a850c04b3abf54132565044b0b7d7bfd8ba270b39432355ffb4"))
+    G = bytearray(unhexlify("04b70e0cbd6bb4bf7f321390b94a03c1d356c21122343280d6115c1d21bd376388b5f723fb4c22dfe6cd4375a05a07476444d5819985007e34"))
+    O = bytearray(unhexlify("ffffffffffffffffffffffffffff16a2e0b8f03e13dd29455c5c2a3d"))
+    F = bytearray(unhexlify("01"))
+
 class SECP256R1(EcCurve):
     P = bytearray(unhexlify("FFFFFFFF00000001000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFF"))
     A = bytearray(unhexlify("FFFFFFFF00000001000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFC"))
