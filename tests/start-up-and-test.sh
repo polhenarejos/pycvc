@@ -24,3 +24,9 @@ for scheme in ${schemes[*]}; do
   ./tests/ca-print.sh > /dev/null
   echo -e "\tok"
 done
+
+## EdDSA
+echo -n "Create CA EdDSA..."
+./tests/ca-create-ed.sh > /dev/null
+./tests/ca-print.sh > /dev/null
+echo -e "\tok"
