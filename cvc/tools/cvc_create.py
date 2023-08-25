@@ -20,11 +20,11 @@
 """
 
 import argparse, logging, sys
-from cryptography.hazmat.primitives.asymmetric import ec, rsa
+from cryptography.hazmat.primitives.asymmetric import ec, rsa, ed25519, ed448
 from cryptography.hazmat.primitives import serialization
 from cvc.terminal import Type, TypeIS, TypeAT, TypeST
 from cvc.certificates import CVC
-from cvc.utils import scheme_rsa
+from cvc.utils import scheme_rsa, scheme_eddsa
 from cvc import __version__, oid
 
 logger = logging.getLogger(__name__)
@@ -175,6 +175,12 @@ def main(args):
             chr = CVC().decode(data).chr()
             if (scheme_rsa(puboid)):
                 pub_key = rsa.RSAPublicNumbers(int.from_bytes(CVC().decode(data).pubkey().find(0x82).data(), 'big'), int.from_bytes(CVC().decode(data).pubkey().find(0x81).data(), 'big')).public_key()
+            elif (scheme_eddsa(puboid)):
+                Q = CVC().decode(data).pubkey().find(0x84).data()
+                if (len(Q) == 32):
+                    pub_key = ed25519.Ed25519PublicKey.from_public_bytes(bytes(Q))
+                else:
+                    pub_key = ed448.Ed448PublicKey.from_public_bytes(bytes(Q))
             else:
                 curve = CVC().decode(data).find_domain()
                 Q = CVC().decode(data).pubkey().find(0x86).data()
@@ -206,6 +212,8 @@ def main(args):
             puboid = oid.ID_TA_RSA_PSS_SHA256
         elif (isinstance(pub_key, ec.EllipticCurvePublicKey)):
             puboid = oid.ID_TA_ECDSA_SHA_256
+    if (isinstance(pub_key, (ed25519.Ed25519PublicKey, ed448.Ed448PublicKey))):
+        puboid = oid.ID_RI_ECDH_SHA_256
 
     if (args.sign_as and typ and not args.outer_as and not args.outer_key): # Cert
         car, signscheme = parse_as(args.sign_as)
