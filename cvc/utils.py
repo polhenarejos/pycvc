@@ -38,6 +38,9 @@ def scheme_rsa(o):
 def scheme_ecdsa(o):
     return (o == oid.ID_TA_ECDSA_SHA_1 or o == oid.ID_TA_ECDSA_SHA_224 or o == oid.ID_TA_ECDSA_SHA_256 or o == oid.ID_TA_ECDSA_SHA_384 or o == oid.ID_TA_ECDSA_SHA_512)
 
+def scheme_eddsa(o):
+    return (o == oid.ID_RI_ECDH_SHA_256)
+
 def from_bcd(c):
     return ''.join([str(s) for s in c])
 

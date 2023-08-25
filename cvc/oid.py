@@ -183,6 +183,7 @@ schemes = [
     ('RSA_PSS_SHA_1', ID_TA_RSA_PSS_SHA_1),
     ('RSA_PSS_SHA_256', ID_TA_RSA_PSS_SHA_256),
     ('RSA_PSS_SHA_512', ID_TA_RSA_PSS_SHA_512),
+    ('EdDSA', ID_RI_ECDH_SHA_256)
     ]
 
 def scheme2oid(scheme):
