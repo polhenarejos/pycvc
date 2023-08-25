@@ -18,7 +18,7 @@
  */
 """
 
-from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography.hazmat.primitives.asymmetric import ec, ed25519, ed448
 from binascii import unhexlify
 
 class EcCurve(dict):
@@ -36,6 +36,10 @@ class EcCurve(dict):
         return UnsupportedCurve
 
     def to_crypto(curve):
+        if (curve.__name__ == 'Curve25519'):
+            return ed25519.Ed25519PublicKey
+        elif (curve.__name__ == 'Curve448'):
+            return ed448.Ed448PublicKey
         for e in ec.EllipticCurve.__subclasses__():
             if (e.__name__.lower() == curve.__name__.lower()):
                 return e()

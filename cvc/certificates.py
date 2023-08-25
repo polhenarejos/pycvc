@@ -20,7 +20,7 @@
 
 from binascii import hexlify
 from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
-from cryptography.hazmat.primitives.asymmetric import ec, rsa, utils, x25519, x448
+from cryptography.hazmat.primitives.asymmetric import ec, rsa, utils, x25519, x448, ed25519, ed448
 from cryptography.exceptions import InvalidSignature
 import datetime
 from cvc.utils import to_bytes, bcd, get_hash_padding, scheme_rsa
@@ -89,11 +89,15 @@ class CVC:
                 pubctx = {1: dom.P, 2: dom.A, 3: dom.B, 4: dom.G, 5: dom.O, 6: Y, 7: dom.F}
             else:
                 pubctx = {6: Y}
-        elif (isinstance(pubkey, x25519.X25519PublicKey) or isinstance(pubkey, x448.X448PublicKey)):
+        elif (isinstance(pubkey, (x25519.X25519PublicKey, x448.X448PublicKey, ed25519.Ed25519PublicKey, ed448.Ed448PublicKey))):
             if (isinstance(pubkey, x25519.X25519PublicKey)):
                 name = 'curve25519'
             elif (isinstance(pubkey, x448.X448PublicKey)):
                 name = 'curve448'
+            elif (isinstance(pubkey, ed25519.Ed25519PublicKey)):
+                name = 'Ed25519'
+            elif (isinstance(pubkey, ed448.Ed448PublicKey)):
+                name = 'Ed448'
             dom = EcCurve.from_name(name)
             Y = pubkey.public_bytes(Encoding.Raw, PublicFormat.Raw)
             pubctx = {1: dom.P, 2: dom.O, 3: dom.G, 4: Y}
@@ -136,6 +140,8 @@ class CVC:
             signature = to_bytes(r) + to_bytes(s)
         elif (isinstance(key, rsa.RSAPrivateKey)):
             signature = key.sign(self.__a.encode(), p, h)
+        elif (isinstance(key, (ed25519.Ed25519PrivateKey, ed448.Ed448PrivateKey))):
+            signature = key.sign(self.__a.encode())
         self.__a = self.__a.add_tag(0x5f37, bytearray(signature))
         return self
 
@@ -198,10 +204,15 @@ class CVC:
             else:
                 if (not curve):
                     curve = self.find_domain(cert_dir, outer)
-                Q = ASN1().decode(puk).find(0x86).data()
-                if (curve and Q):
-                    pubkey = ec.EllipticCurvePublicKey.from_encoded_point(curve, bytes(Q))
-                    pubkey.verify(utils.encode_dss_signature(int.from_bytes(signature[:len(signature)//2],'big'), int.from_bytes(signature[len(signature)//2:],'big')), body, ec.ECDSA(h))
+                if (curve in (ed25519.Ed25519PublicKey, ed448.Ed448PublicKey)):
+                    Q = ASN1().decode(puk).find(0x84).data()
+                    pubkey = curve.from_public_bytes(bytes(Q))
+                    pubkey.verify(bytes(signature), bytes(body))
+                elif (curve):
+                    Q = ASN1().decode(puk).find(0x86).data()
+                    if (Q):
+                        pubkey = ec.EllipticCurvePublicKey.from_encoded_point(curve, bytes(Q))
+                        pubkey.verify(utils.encode_dss_signature(int.from_bytes(signature[:len(signature)//2],'big'), int.from_bytes(signature[len(signature)//2:],'big')), body, ec.ECDSA(h))
                 else:
                     return False
         except InvalidSignature:
