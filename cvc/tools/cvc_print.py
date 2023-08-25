@@ -22,7 +22,7 @@
 import argparse, logging, sys
 from cvc.certificates import CVC
 from binascii import hexlify
-from cvc.utils import scheme_rsa
+from cvc.utils import scheme_rsa, scheme_eddsa
 from cvc.oid import oid2scheme
 from cvc import __version__, oid
 from datetime import date
@@ -68,6 +68,8 @@ def main(args):
     if (scheme_rsa(puboid)):
         print(f'    Modulus: {hexlify(CVC().decode(cdata).pubkey().find(0x81).data()).decode()}')
         print(f'    Exponent: {hexlify(CVC().decode(cdata).pubkey().find(0x82).data()).decode()}')
+    elif (scheme_eddsa(puboid)):
+        print(f'    Public Point: {hexlify(CVC().decode(cdata).pubkey().find(0x84).data()).decode()}')
     else:
         print(f'    Public Point: {hexlify(CVC().decode(cdata).pubkey().find(0x86).data()).decode()}')
     print(f'  CHR: {chr.decode()}')
