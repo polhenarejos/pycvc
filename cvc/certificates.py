@@ -20,7 +20,15 @@
 
 from binascii import hexlify
 from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
-from cryptography.hazmat.primitives.asymmetric import ec, rsa, utils, x25519, x448, ed25519, ed448
+from cryptography.hazmat.primitives.asymmetric import (
+    ec,
+    rsa,
+    utils,
+    x25519,
+    x448,
+    ed25519,
+    ed448,
+)
 from cryptography.exceptions import InvalidSignature
 import datetime
 from cvc.utils import to_bytes, bcd, get_hash_padding, scheme_rsa
@@ -28,8 +36,10 @@ from cvc.ec_curves import EcCurve
 from cvc.asn1 import ASN1
 import os
 
+
 class CVC:
-    __data=None
+    __data = None
+
     def __init__(self):
         self.__a = ASN1()
 
@@ -38,134 +48,251 @@ class CVC:
         self.__a = ASN1().decode(self.__data)
         return self
 
-    def body(self, pubkey=None, scheme=None, car=None, chr=None, role=None, days=None, since=None, extensions=None, req=False):
-        if (self.__data != None):
-            return self.cert().find(0x7f4e)
-        self.__a = ASN1().add_tag(0x7f4e, self.cpi().car(car).pubkey(pubkey, scheme, req).chr(chr).role(role).valid(days=days, since=since).extensions(extensions).encode())
+    def body(
+        self,
+        pubkey=None,
+        scheme=None,
+        car=None,
+        chr=None,
+        role=None,
+        days=None,
+        since=None,
+        extensions=None,
+        req=False,
+    ):
+        if self.__data != None:
+            return self.cert().find(0x7F4E)
+        self.__a = ASN1().add_tag(
+            0x7F4E,
+            self.cpi()
+            .car(car)
+            .pubkey(pubkey, scheme, req)
+            .chr(chr)
+            .role(role)
+            .valid(days=days, since=since)
+            .extensions(extensions)
+            .encode(),
+        )
         return self
 
+    def decode_authorization_bits(self):
+        # get CHAT according to BSI-TR-03110-3 Appendix C.1.5
+        # It holds "A discretionary data object that encodes the relative authorization"
+        # Appendix D.2 Table 27 states Tag 0x53 for "Discretionary Data"
+        data = self.role().find(0x53).data()
+        # convert the byte array to a bit string
+        bits = "".join(format(byte, "08b") for byte in data)
+        # reverse the bit string since the table provided in
+        # BSI-TR-03110-4 Chapter 2.2.3.2 Table 4 is MSB
+        # e.g. "Age verification" has place 0 in the Table
+        # but "Age verification" is actually the highest/last bit in a series of 5 bytes
+        # and not the first (index zero) so we simply reverse the bitstring
+        return bits[::-1]
+
     def extensions(self, extensions=None):
-        if (self.__data != None):
+        if self.__data != None:
             return self.body().find(0x65)
-        if (extensions != None):
-            data = b''
+        if extensions != None:
+            data = b""
             for ext in extensions:
-                data += ASN1().add_object(tag=ext['tag'], oid=ext['oid'], ctxs=ext['contexts']).encode()
+                data += (
+                    ASN1()
+                    .add_object(tag=ext["tag"], oid=ext["oid"], ctxs=ext["contexts"])
+                    .encode()
+                )
             self.__a = self.__a.add_tag(0x65, data)
         return self
 
     def car(self, car=None):
-        if (self.__data != None):
+        if self.__data != None:
             return self.body().find(0x42).data()
         self.__a = self.__a.add_tag(0x42, car)
         return self
 
     def outer_car(self):
-        if (self.req().find(0x42)):
+        if self.req().find(0x42):
             return self.req().find(0x42).data()
         return None
 
     def chr(self, chr=None):
-        if (self.__data != None):
-            return self.body().find(0x5f20).data()
-        self.__a = self.__a.add_tag(0x5f20, chr)
+        if self.__data != None:
+            return self.body().find(0x5F20).data()
+        self.__a = self.__a.add_tag(0x5F20, chr)
         return self
 
-    def cpi(self, val = 0):
-        if (self.__data != None):
-            return self.body().find(0x5f29).data()
-        self.__a = self.__a.add_tag(0x5f29, to_bytes(val))
+    def cpi(self, val=0):
+        if self.__data != None:
+            return self.body().find(0x5F29).data()
+        self.__a = self.__a.add_tag(0x5F29, to_bytes(val))
         return self
 
     def pubkey(self, pubkey=None, scheme=None, full=None):
-        if (self.__data != None):
-            return self.body().find(0x7f49)
-        if (isinstance(pubkey, rsa.RSAPublicKey)):
-            pubctx = {1: to_bytes(pubkey.public_numbers().n), 2: to_bytes(pubkey.public_numbers().e)}
-        elif (isinstance(pubkey, ec.EllipticCurvePublicKey)):
+        if self.__data != None:
+            return self.body().find(0x7F49)
+        if isinstance(pubkey, rsa.RSAPublicKey):
+            pubctx = {
+                1: to_bytes(pubkey.public_numbers().n),
+                2: to_bytes(pubkey.public_numbers().e),
+            }
+        elif isinstance(pubkey, ec.EllipticCurvePublicKey):
             dom = EcCurve.from_name(pubkey.public_numbers().curve.name)
             Y = pubkey.public_bytes(Encoding.X962, PublicFormat.UncompressedPoint)
-            if (full):
-                pubctx = {1: dom.P, 2: dom.A, 3: dom.B, 4: dom.G, 5: dom.O, 6: Y, 7: dom.F}
+            if full:
+                pubctx = {
+                    1: dom.P,
+                    2: dom.A,
+                    3: dom.B,
+                    4: dom.G,
+                    5: dom.O,
+                    6: Y,
+                    7: dom.F,
+                }
             else:
                 pubctx = {6: Y}
-        elif (isinstance(pubkey, (x25519.X25519PublicKey, x448.X448PublicKey, ed25519.Ed25519PublicKey, ed448.Ed448PublicKey))):
-            if (isinstance(pubkey, x25519.X25519PublicKey)):
-                name = 'curve25519'
-            elif (isinstance(pubkey, x448.X448PublicKey)):
-                name = 'curve448'
-            elif (isinstance(pubkey, ed25519.Ed25519PublicKey)):
-                name = 'Ed25519'
-            elif (isinstance(pubkey, ed448.Ed448PublicKey)):
-                name = 'Ed448'
+        elif isinstance(
+            pubkey,
+            (
+                x25519.X25519PublicKey,
+                x448.X448PublicKey,
+                ed25519.Ed25519PublicKey,
+                ed448.Ed448PublicKey,
+            ),
+        ):
+            if isinstance(pubkey, x25519.X25519PublicKey):
+                name = "curve25519"
+            elif isinstance(pubkey, x448.X448PublicKey):
+                name = "curve448"
+            elif isinstance(pubkey, ed25519.Ed25519PublicKey):
+                name = "Ed25519"
+            elif isinstance(pubkey, ed448.Ed448PublicKey):
+                name = "Ed448"
             dom = EcCurve.from_name(name)
             Y = pubkey.public_bytes(Encoding.Raw, PublicFormat.Raw)
             pubctx = {1: dom.P, 2: dom.O, 3: dom.G, 4: Y}
-        self.__a = self.__a.add_object(0x7f49, scheme, pubctx)
+        self.__a = self.__a.add_object(0x7F49, scheme, pubctx)
         return self
 
     def role(self, role=None):
-        if (self.__data != None):
-            return self.body().find(0x7f4c)
-        if (role != None):
-            self.__a = self.__a.add_tag(0x7f4c, ASN1().add_oid(role.OID).add_tag(0x53, role.to_bytes()).encode())
+        if self.__data != None:
+            return self.body().find(0x7F4C)
+        if role != None:
+            self.__a = self.__a.add_tag(
+                0x7F4C, ASN1().add_oid(role.OID).add_tag(0x53, role.to_bytes()).encode()
+            )
         return self
 
     def valid(self, days=None, since=None):
-        if (self.__data != None):
-            return self.body().find(0x5f25).data()
-        if (days):
-            if (not since):
+        if self.__data != None:
+            return self.body().find(0x5F25).data()
+        if days:
+            if not since:
                 since = datetime.datetime.now().strftime("%y%m%d")
-            until = (datetime.datetime.strptime(since, "%y%m%d") + datetime.timedelta(days = int(days))).strftime("%y%m%d")
-            self.__a = self.__a.add_tag(0x5f25, bcd(since)).add_tag(0x5f24, bcd(until))
+            until = (
+                datetime.datetime.strptime(since, "%y%m%d")
+                + datetime.timedelta(days=int(days))
+            ).strftime("%y%m%d")
+            self.__a = self.__a.add_tag(0x5F25, bcd(since)).add_tag(0x5F24, bcd(until))
         return self
 
     def expires(self):
-        return self.body().find(0x5f24).data()
+        return self.body().find(0x5F24).data()
 
     def signature(self):
-        if (self.__data != None):
-            return self.cert().find(0x5f37).data()
+        if self.__data != None:
+            return self.cert().find(0x5F37).data()
 
     def outer_signature(self):
-        if (self.req().find(0x5f37)):
-            return self.req().find(0x5f37).data()
+        if self.req().find(0x5F37):
+            return self.req().find(0x5F37).data()
 
     def sign(self, key, scheme):
-        h,p = get_hash_padding(scheme)
-        if (isinstance(key, ec.EllipticCurvePrivateKey)):
+        h, p = get_hash_padding(scheme)
+        if isinstance(key, ec.EllipticCurvePrivateKey):
             signature = key.sign(self.__a.encode(), ec.ECDSA(h))
-            r,s = utils.decode_dss_signature(signature)
+            r, s = utils.decode_dss_signature(signature)
             signature = to_bytes(r) + to_bytes(s)
-        elif (isinstance(key, rsa.RSAPrivateKey)):
+        elif isinstance(key, rsa.RSAPrivateKey):
             signature = key.sign(self.__a.encode(), p, h)
-        elif (isinstance(key, (ed25519.Ed25519PrivateKey, ed448.Ed448PrivateKey))):
+        elif isinstance(key, (ed25519.Ed25519PrivateKey, ed448.Ed448PrivateKey)):
             signature = key.sign(self.__a.encode())
-        self.__a = self.__a.add_tag(0x5f37, bytearray(signature))
+        self.__a = self.__a.add_tag(0x5F37, bytearray(signature))
         return self
 
-    def cert(self, pubkey=None, scheme=None, signkey=None, signscheme=None, car=None, chr=None, role=None, days=None, since=None, extensions=None, req=False):
-        if (self.__data != None):
-            return self.req().find(0x7f21)
-        self.__a = ASN1().add_tag(0x7f21, self.body(pubkey, scheme, car, chr, role, days, since, extensions, req or chr==car).sign(signkey, signscheme).encode())
+    def cert(
+        self,
+        pubkey=None,
+        scheme=None,
+        signkey=None,
+        signscheme=None,
+        car=None,
+        chr=None,
+        role=None,
+        days=None,
+        since=None,
+        extensions=None,
+        req=False,
+    ):
+        if self.__data != None:
+            return self.req().find(0x7F21)
+        self.__a = ASN1().add_tag(
+            0x7F21,
+            self.body(
+                pubkey,
+                scheme,
+                car,
+                chr,
+                role,
+                days,
+                since,
+                extensions,
+                req or chr == car,
+            )
+            .sign(signkey, signscheme)
+            .encode(),
+        )
         return self
 
-    def req(self, pubkey=None, scheme=None, signkey=None, signscheme=None, car=None, chr=None, outercar=None, outerkey=None, outerscheme=None, extensions=None):
-        if (self.__data != None):
+    def req(
+        self,
+        pubkey=None,
+        scheme=None,
+        signkey=None,
+        signscheme=None,
+        car=None,
+        chr=None,
+        outercar=None,
+        outerkey=None,
+        outerscheme=None,
+        extensions=None,
+    ):
+        if self.__data != None:
             aut = ASN1().decode(self.__data).find(0x67)
-            if (aut):
+            if aut:
                 return aut
             return ASN1().decode(self.__data)
-        cert = self.cert(pubkey, scheme, signkey, signscheme, car, chr, role=None, days=None, since=None, extensions=extensions, req=True)
-        if (outercar != None and outerkey != None and outerscheme != None):
-            self.__a = ASN1().add_tag(0x67, cert.car(outercar).sign(outerkey, outerscheme).encode())
+        cert = self.cert(
+            pubkey,
+            scheme,
+            signkey,
+            signscheme,
+            car,
+            chr,
+            role=None,
+            days=None,
+            since=None,
+            extensions=extensions,
+            req=True,
+        )
+        if outercar != None and outerkey != None and outerscheme != None:
+            self.__a = ASN1().add_tag(
+                0x67, cert.car(outercar).sign(outerkey, outerscheme).encode()
+            )
         return self
 
     def is_req(self):
-        if (self.__data != None):
+        if self.__data != None:
             b = self.__a
-            ret = self.__a.find(0x67) != None or self.body().find(0x5f25) == None
+            ret = self.__a.find(0x67) != None or self.body().find(0x5F25) == None
             self.__a = b
             return ret
         return False
@@ -175,68 +302,80 @@ class CVC:
 
     def verify(self, outer=False, cert_dir=None, curve=None, dica=None):
         chr = self.chr()
-        if (outer is True):
+        if outer is True:
             car = self.outer_car()
             signature = self.outer_signature()
             body = self.cert().data()
-            body = ASN1().add_tag(0x7f21, body).add_tag(0x42, car).encode()
+            body = ASN1().add_tag(0x7F21, body).add_tag(0x42, car).encode()
         else:
             car = self.car()
             signature = self.signature()
             body = self.body().data(return_tag=True)
-        if ((car != chr or outer is True) and dica is None):
+        if (car != chr or outer is True) and dica is None:
             try:
-                with open(os.path.join(cert_dir,bytes(car)), 'rb') as f:
+                with open(os.path.join(cert_dir, bytes(car)), "rb") as f:
                     dica = f.read()
             except FileNotFoundError:
-                print(f'[Warning: File {car.decode()} not found]')
+                print(f"[Warning: File {car.decode()} not found]")
                 return False
-        if (dica is None):
+        if dica is None:
             puk = self.pubkey().data()
         else:
             puk = CVC().decode(dica).pubkey().data()
         scheme = ASN1().decode(puk).oid()
-        h,p = get_hash_padding(scheme)
+        h, p = get_hash_padding(scheme)
         try:
-            if (scheme_rsa(scheme)):
-                pubkey = rsa.RSAPublicNumbers(int.from_bytes(ASN1().decode(puk).find(0x82).data(), 'big'), int.from_bytes(ASN1().decode(puk).find(0x81).data(), 'big')).public_key()
+            if scheme_rsa(scheme):
+                pubkey = rsa.RSAPublicNumbers(
+                    int.from_bytes(ASN1().decode(puk).find(0x82).data(), "big"),
+                    int.from_bytes(ASN1().decode(puk).find(0x81).data(), "big"),
+                ).public_key()
                 pubkey.verify(bytes(signature), bytes(body), p, h)
             else:
-                if (not curve):
+                if not curve:
                     curve = self.find_domain(cert_dir, outer)
-                if (curve in (ed25519.Ed25519PublicKey, ed448.Ed448PublicKey)):
+                if curve in (ed25519.Ed25519PublicKey, ed448.Ed448PublicKey):
                     Q = ASN1().decode(puk).find(0x84).data()
                     pubkey = curve.from_public_bytes(bytes(Q))
                     pubkey.verify(bytes(signature), bytes(body))
-                elif (curve):
+                elif curve:
                     Q = ASN1().decode(puk).find(0x86).data()
-                    if (Q):
-                        pubkey = ec.EllipticCurvePublicKey.from_encoded_point(curve, bytes(Q))
-                        pubkey.verify(utils.encode_dss_signature(int.from_bytes(signature[:len(signature)//2],'big'), int.from_bytes(signature[len(signature)//2:],'big')), body, ec.ECDSA(h))
+                    if Q:
+                        pubkey = ec.EllipticCurvePublicKey.from_encoded_point(
+                            curve, bytes(Q)
+                        )
+                        pubkey.verify(
+                            utils.encode_dss_signature(
+                                int.from_bytes(signature[: len(signature) // 2], "big"),
+                                int.from_bytes(signature[len(signature) // 2 :], "big"),
+                            ),
+                            body,
+                            ec.ECDSA(h),
+                        )
                 else:
                     return False
         except InvalidSignature:
             return False
         return True
 
-    def find_domain(self, cert_dir='', outer=False):
+    def find_domain(self, cert_dir="", outer=False):
         adata = self.encode()
         try:
             P = CVC().decode(adata).pubkey().find(0x81) if outer is False else None
-            if (P):
+            if P:
                 return EcCurve.to_crypto(EcCurve.from_P(P.data()))
             depth = 10
-            while (P == None and depth > 0):
+            while P == None and depth > 0:
                 car = CVC().decode(adata).outer_car()
-                if (not car or outer is False):
+                if not car or outer is False:
                     car = CVC().decode(adata).car()
                 chr = CVC().decode(adata).chr()
-                with open(os.path.join(cert_dir,bytes(car)), 'rb') as f:
+                with open(os.path.join(cert_dir, bytes(car)), "rb") as f:
                     adata = f.read()
                     P = CVC().decode(adata).pubkey().find(0x81)
-                if (P):
+                if P:
                     return EcCurve.to_crypto(EcCurve.from_P(P.data()))
                 depth -= 1
         except FileNotFoundError:
-            print(f'[Warning: File {car.decode()} not found]')
+            print(f"[Warning: File {car.decode()} not found]")
         return None
