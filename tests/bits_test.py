@@ -4,7 +4,7 @@ import binascii
 import logging
 
 from cvc.certificates import CVC
-from cvc.tools.cvc_print import AuthorizationBits
+from cvc.tools.cvc_print import AuthorizationBits, decode_authorization_bits
 
 # created with --rid --read-dg1 --write-dg22 --verify-age --install-cert
 CERT_WITH_RID_READ_DG1_WRITE_DG22_VERIFY_AGE_INSTALL_CERT = b"7f2181e37f4e819c5f290100420d5a5a41544456434130303030317f494f060a04007f000702020202038641043eb3b230afe41d99b0e564b8673ca9f830de0c4f1a21ccfbebbb378b980d2384750751df9403878cb46f9297d5507a759e80ab463b0bb233e5dce068ddeb55665f200d5a5a41545445524d30303030317f4c12060904007f000703010202530501000001455f25060203000900095f24060203010100085f374094d5eb4162b8f38ab531b2259af0a8aaa7fdadaa126d21948e5d68a739bac4141b59ca43fb411165b7725c39ad4fa71ab548ede169616282de72860e7de9179b"
@@ -24,7 +24,7 @@ class TestAuthorizationBits(unittest.TestCase):
             )
         )
         self.log.info(cvc)
-        bits = cvc.decode_authorization_bits()
+        bits = decode_authorization_bits(cvc.role().find(0x53).data())
 
         self.log.info("Raw authorization bits:" + bits)
         for bit in AuthorizationBits:
@@ -44,7 +44,7 @@ class TestAuthorizationBits(unittest.TestCase):
         self.log.info(" Testing CERT_WITH_RID_READ_DG22")
         cvc = CVC().decode(binascii.unhexlify(CERT_WITH_RID_READ_DG22))
         self.log.info(cvc)
-        bits = cvc.decode_authorization_bits()
+        bits = decode_authorization_bits(cvc.role().find(0x53).data())
 
         self.log.info("Raw authorization bits:" + bits)
         for bit in AuthorizationBits:

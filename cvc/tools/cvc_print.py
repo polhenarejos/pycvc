@@ -99,9 +99,20 @@ def parse_args():
 def bcd2date(v):
     return date(v[0]*10+v[1]+2000, v[2]*10+v[3], v[4]*10+v[5])
 
+def decode_authorization_bits(chat_bytes):
+    # get CHAT according to BSI-TR-03110-3 Appendix C.1.5
+    # It holds "A discretionary data object that encodes the relative authorization"
+    # Appendix D.2 Table 27 states Tag 0x53 for "Discretionary Data"
+    # convert the byte array to a bit string
+    bits = "".join(format(byte, "08b") for byte in chat_bytes)
+    # reverse the bit string since the table provided in
+    # BSI-TR-03110-4 Chapter 2.2.3.2 Table 4 is MSB
+    # e.g. "Age verification" has place 0 in the Table
+    # but "Age verification" is actually the highest/last bit in a series of 5 bytes
+    # and not the first (index zero) so we simply reverse the bitstring
+    return bits[::-1]
 
 def main(args):
-    print("ARGS",args)
     with open(args.file, 'rb') as f:
         cdata = f.read()
 
@@ -132,7 +143,8 @@ def main(args):
         elif (o == oid.ID_ST):
             print('    Role:  TypeST')
         if(args.print_bits):
-            bits = CVC().decode(cdata).decode_authorization_bits()
+            chat_bytes = CVC().decode(cdata).role().find(0x53).data()
+            bits = decode_authorization_bits(chat_bytes)
             for bit in AuthorizationBits:
                 print(
                     "        Field '{:<32}' has value: {:^6} at offset: {:2}".format(

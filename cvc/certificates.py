@@ -38,20 +38,6 @@ class CVC:
         self.__a = ASN1().decode(self.__data)
         return self
 
-    def decode_authorization_bits(self):
-        # get CHAT according to BSI-TR-03110-3 Appendix C.1.5
-        # It holds "A discretionary data object that encodes the relative authorization"
-        # Appendix D.2 Table 27 states Tag 0x53 for "Discretionary Data"
-        data = self.role().find(0x53).data()
-        # convert the byte array to a bit string
-        bits = "".join(format(byte, "08b") for byte in data)
-        # reverse the bit string since the table provided in
-        # BSI-TR-03110-4 Chapter 2.2.3.2 Table 4 is MSB
-        # e.g. "Age verification" has place 0 in the Table
-        # but "Age verification" is actually the highest/last bit in a series of 5 bytes
-        # and not the first (index zero) so we simply reverse the bitstring
-        return bits[::-1]
-
     def body(self, pubkey=None, scheme=None, car=None, chr=None, role=None, days=None, since=None, extensions=None, req=False):
         if (self.__data != None):
             return self.cert().find(0x7f4e)
