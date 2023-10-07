@@ -26,6 +26,7 @@ import datetime
 from cvc.utils import to_bytes, bcd, get_hash_padding, scheme_rsa
 from cvc.ec_curves import EcCurve
 from cvc.asn1 import ASN1
+from cvc.terminal import Type
 import os
 
 class CVC:
@@ -76,7 +77,7 @@ class CVC:
             return self.body().find(0x5f29).data()
         self.__a = self.__a.add_tag(0x5f29, to_bytes(val))
         return self
-    
+
     def pubkey(self, pubkey=None, scheme=None, full=None):
         if (self.__data != None):
             return self.body().find(0x7f49)
@@ -106,7 +107,12 @@ class CVC:
 
     def role(self, role=None):
         if (self.__data != None):
-            return self.body().find(0x7f4c)
+            d = self.body().find(0x7f4c)
+            if (d):
+                o = d.oid()
+                chat = self.body().find(0x7f4c).find(0x53).data()
+                return Type.from_bytes(o, chat)
+            return None
         if (role != None):
             self.__a = self.__a.add_tag(0x7f4c, ASN1().add_oid(role.OID).add_tag(0x53, role.to_bytes()).encode())
         return self
