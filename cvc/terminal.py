@@ -29,8 +29,10 @@ class Type:
 
     __chat = 0
 
-    def __init__(self, role):
+    def __init__(self, role, _args, kwargs):
         self.role = role
+        for attr in _args:
+            setattr(self, attr, kwargs.get(attr, 0))
 
     def to_bytes(self):
         x = 0
@@ -47,29 +49,32 @@ class Type:
                 chat = int(chat, 2)
             self.__chat = chat
 
+    def from_bytes(o, chat):
+        for s in Type.__subclasses__():
+            if (s.OID == o):
+                nargs = len(s._args)
+                chat = int.from_bytes(chat, 'big')
+                kwargs = {attr: (chat >> (nargs - ix - 1)) & 1 for ix, attr in enumerate(s._args)}
+                return s(chat >> nargs, **kwargs)
+        raise Exception('Unknown type')
+
 class TypeIS(Type):
     OID = oid.ID_IS
     name = 'TypeIS'
     _args = ('rfu5', 'rfu4', 'rfu3', 'rfu2', 'read_iris', 'read_fingerprint')
     def __init__(self, role, **kwargs):
-        for attr in self._args:
-            setattr(self, attr, kwargs.get(attr, 0))
-        super().__init__(role)
+        super().__init__(role, self._args, kwargs)
 
 class TypeAT(Type):
     OID = oid.ID_AT
     name = 'TypeAT'
     _args = ('write_dg17', 'write_dg18', 'write_dg19', 'write_dg20', 'write_dg21', 'write_dg22', 'rfu31', 'psa', 'read_dg22', 'read_dg21', 'read_dg20', 'read_dg19', 'read_dg18', 'read_dg17', 'read_dg16', 'read_dg15', 'read_dg14', 'read_dg13', 'read_dg12', 'read_dg11', 'read_dg10', 'read_dg9', 'read_dg8', 'read_dg7', 'read_dg6', 'read_dg5', 'read_dg4', 'read_dg3', 'read_dg2', 'read_dg1', 'install_qual_cert', 'install_cert', 'pin_management', 'can_allowed', 'privileged', 'rid', 'verify_community', 'verify_age')
     def __init__(self, role, **kwargs):
-        for attr in self._args:
-            setattr(self, attr, kwargs.get(attr, 0))
-        super().__init__(role)
+        super().__init__(role, self._args, kwargs)
 
 class TypeST(Type):
     OID = oid.ID_ST
     name = 'TypeST'
     _args = ('rfu5', 'rfu4', 'rfu3', 'rfu2', 'gen_qual_sig', 'gen_sig')
     def __init__(self, role, **kwargs):
-        for attr in self._args:
-            setattr(self, attr, kwargs.get(attr, 0))
-        super().__init__(role)
+        super().__init__(role, self._args, kwargs)
