@@ -31,12 +31,58 @@ import os
 logger = logging.getLogger(__name__)
 cert_dir = b''
 
+# Authorization bits according to
+# BSI-TR-03110-4 Chapter 2.2.3.2 Table 4
+AuthorizationBits = {
+    "Upper Role Bit": 39,
+    "Lower Role Bit": 38,
+    "Write Datagroup 17": 37,
+    "Write Datagroup 18": 36,
+    "Write Datagroup 19": 35,
+    "Write Datagroup 20": 34,
+    "Write Datagroup 21": 33,
+    "Write Datagroup 22": 32,
+    "RFU": 31,
+    "PSA": 30,
+    "Read Datagroup 22": 29,
+    "Read Datagroup 21": 28,
+    "Read Datagroup 20": 27,
+    "Read Datagroup 19": 26,
+    "Read Datagroup 18": 25,
+    "Read Datagroup 17": 24,
+    "Read Datagroup 16": 23,
+    "Read Datagroup 15": 22,
+    "Read Datagroup 14": 21,
+    "Read Datagroup 13": 20,
+    "Read Datagroup 12": 19,
+    "Read Datagroup 11": 18,
+    "Read Datagroup 10": 17,
+    "Read Datagroup 09": 16,
+    "Read Datagroup 08": 15,
+    "Read Datagroup 07": 14,
+    "Read Datagroup 06": 13,
+    "Read Datagroup 05": 12,
+    "Read Datagroup 04": 11,
+    "Read Datagroup 03": 10,
+    "Read Datagroup 02": 9,
+    "Read Datagroup 01": 8,
+    "Install Qualified Certificate": 7,
+    "Install Certificate": 6,
+    "PIN Management": 5,
+    "CAN allowed": 4,
+    "Privileged Terminal": 3,
+    "Restricted Identification": 2,
+    "Municipality ID Verification": 1,
+    "Age Verification": 0,
+}
+
 def parse_args():
     global cert_dir
     parser = argparse.ArgumentParser(description='Prints a Card Verifiable Certificate')
     parser.add_argument('--version', help='Displays the current version', action='store_true')
     parser.add_argument('file',help='Certificate to print', metavar='FILENAME')
     parser.add_argument('-d','--directory', help='Directory where chain CV certificates are located', metavar='DIRECTORY')
+    parser.add_argument('--print-bits', help='Print a detailed info about Authorization bits set',action='store_true')
     if ('--version' in sys.argv):
         print('Card Verifiable Certificate tools for Python')
         print('Author: Pol Henarejos')
@@ -52,6 +98,19 @@ def parse_args():
 
 def bcd2date(v):
     return date(v[0]*10+v[1]+2000, v[2]*10+v[3], v[4]*10+v[5])
+
+def decode_authorization_bits(chat_bytes):
+    # get CHAT according to BSI-TR-03110-3 Appendix C.1.5
+    # It holds "A discretionary data object that encodes the relative authorization"
+    # Appendix D.2 Table 27 states Tag 0x53 for "Discretionary Data"
+    # convert the byte array to a bit string
+    bits = "".join(format(byte, "08b") for byte in chat_bytes)
+    # reverse the bit string since the table provided in
+    # BSI-TR-03110-4 Chapter 2.2.3.2 Table 4 is MSB
+    # e.g. "Age verification" has place 0 in the Table
+    # but "Age verification" is actually the highest/last bit in a series of 5 bytes
+    # and not the first (index zero) so we simply reverse the bitstring
+    return bits[::-1]
 
 def main(args):
     with open(args.file, 'rb') as f:
@@ -83,6 +142,17 @@ def main(args):
             print('    Role:  TypeAT')
         elif (o == oid.ID_ST):
             print('    Role:  TypeST')
+        if(args.print_bits):
+            chat_bytes = CVC().decode(cdata).role().find(0x53).data()
+            bits = decode_authorization_bits(chat_bytes)
+            for bit in AuthorizationBits:
+                print(
+                    "        Field '{:<32}' has value: {:^6} at offset: {:2}".format(
+                        bit,
+                        str(bits[AuthorizationBits[bit]] == "1"),
+                        AuthorizationBits[bit],
+                    )
+                )
         print(f'    Bytes: {hexlify(CVC().decode(cdata).role().find(0x53).data()).decode()}')
         print(f'  Since:   {bcd2date(CVC().decode(cdata).valid()).strftime("%Y-%m-%d")}')
         print(f'  Expires: {bcd2date(CVC().decode(cdata).expires()).strftime("%Y-%m-%d")}')

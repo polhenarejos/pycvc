@@ -76,7 +76,7 @@ class CVC:
             return self.body().find(0x5f29).data()
         self.__a = self.__a.add_tag(0x5f29, to_bytes(val))
         return self
-
+    
     def pubkey(self, pubkey=None, scheme=None, full=None):
         if (self.__data != None):
             return self.body().find(0x7f49)
