@@ -129,7 +129,7 @@ def get_role(r):
     elif (r== 'dv_domestic'):
         return Type.DV_domestic
     elif (r == 'dv_foreign'):
-        return Type.dv_foreign
+        return Type.DV_foreign
     elif (r == 'terminal'):
         return Type.Terminal
     return None
