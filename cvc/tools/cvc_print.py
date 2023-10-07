@@ -24,6 +24,7 @@ from cvc.certificates import CVC
 from binascii import hexlify
 from cvc.utils import scheme_rsa, scheme_eddsa
 from cvc.oid import oid2scheme
+from cvc.terminal import Type
 from cvc import __version__, oid
 from datetime import date
 import os
@@ -132,28 +133,21 @@ def main(args):
     else:
         print(f'    Public Point: {hexlify(CVC().decode(cdata).pubkey().find(0x86).data()).decode()}')
     print(f'  CHR: {chr.decode()}')
-    role = CVC().decode(cdata).role()
-    if (role):
-        print('  CHAT:')
-        o = role.oid()
-        if (o == oid.ID_IS):
-            print('    Role:  TypeIS')
-        elif (o == oid.ID_AT):
-            print('    Role:  TypeAT')
-        elif (o == oid.ID_ST):
-            print('    Role:  TypeST')
-        if(args.print_bits):
-            chat_bytes = CVC().decode(cdata).role().find(0x53).data()
-            bits = decode_authorization_bits(chat_bytes)
-            for bit in AuthorizationBits:
-                print(
-                    "        Field '{:<32}' has value: {:^6} at offset: {:2}".format(
-                        bit,
-                        str(bits[AuthorizationBits[bit]] == "1"),
-                        AuthorizationBits[bit],
-                    )
-                )
-        print(f'    Bytes: {hexlify(CVC().decode(cdata).role().find(0x53).data()).decode()}')
+    typ = CVC().decode(cdata).role()
+    if (typ):
+        print(f'  CHAT: {typ.name}')
+        if (typ.role == Type.CVCA):
+            print('    Role:  CA')
+        elif (typ.role == Type.DV_domestic):
+            print('    Role:  DV domestic')
+        elif (typ.role == Type.DV_foreign):
+            print('    Role:  DV foreign')
+        else:
+            print('    Role:  Terminal')
+        if (args.print_bits):
+            fields = [bit for ix, bit in enumerate(typ._args) if getattr(typ, bit, 0) == 1]
+            print(f'        Fields: {", ".join(fields)}')
+        print(f'    Bytes: {hexlify(typ.to_bytes()).decode()}')
         print(f'  Since:   {bcd2date(CVC().decode(cdata).valid()).strftime("%Y-%m-%d")}')
         print(f'  Expires: {bcd2date(CVC().decode(cdata).expires()).strftime("%Y-%m-%d")}')
     isreq = CVC().decode(cdata).is_req()
