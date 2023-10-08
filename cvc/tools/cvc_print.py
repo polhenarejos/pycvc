@@ -77,16 +77,9 @@ def main(args):
     typ = CVC().decode(cdata).role()
     if (typ):
         print(f'  CHAT: {typ.name}')
-        if (typ.role == Type.CVCA):
-            print('    Role:  CA')
-        elif (typ.role == Type.DV_domestic):
-            print('    Role:  DV domestic')
-        elif (typ.role == Type.DV_foreign):
-            print('    Role:  DV foreign')
-        else:
-            print('    Role:  Terminal')
-        fields = [bit for ix, bit in enumerate(typ._args) if getattr(typ, bit, 0) == 1]
-        print(f'        Fields: {", ".join(fields)}')
+        print(f'    Role:  {typ.role_str()}')
+        if (typ.fields() > 0):
+            print(f'    Fields: {typ.fields_str()}')
         print(f'    Bytes: {hexlify(typ.to_bytes()).decode()}')
         print(f'  Since:   {bcd2date(CVC().decode(cdata).valid()).strftime("%Y-%m-%d")}')
         print(f'  Expires: {bcd2date(CVC().decode(cdata).expires()).strftime("%Y-%m-%d")}')
