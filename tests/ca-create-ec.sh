@@ -14,3 +14,7 @@ openssl pkcs8 -topk8 -nocrypt -in ZZATTERM00001.pem -outform DER -out ZZATTERM00
 cvc-create --chr=ZZATTERM00001 --scheme=$2 --sign-key=ZZATTERM00001.pkcs8 --out-cert=ZZATTERM00001.cvreq --req-car=ZZATDVCA00001
 
 cvc-create --role=terminal --type=at --days=60 --sign-key=ZZATDVCA00001.pkcs8 --sign-as=ZZATDVCA00001.cvcert --request=ZZATTERM00001.cvreq
+
+mkdir -p certs
+cp ZZATCVCA00001.cvcert certs/ZZATCVCA00001
+cp ZZATDVCA00001.cvcert certs/ZZATDVCA00001
