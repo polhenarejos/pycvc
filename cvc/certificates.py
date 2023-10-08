@@ -27,7 +27,7 @@ from cvc.utils import to_bytes, bcd, get_hash_padding, scheme_rsa
 from cvc.ec_curves import EcCurve
 from cvc.asn1 import ASN1
 from cvc.terminal import Type
-import os
+import os, math
 
 class CVC:
     __data=None
@@ -143,7 +143,8 @@ class CVC:
         if (isinstance(key, ec.EllipticCurvePrivateKey)):
             signature = key.sign(self.__a.encode(), ec.ECDSA(h))
             r,s = utils.decode_dss_signature(signature)
-            signature = to_bytes(r) + to_bytes(s)
+            n = math.ceil(key.curve.key_size / 8)
+            signature = r.to_bytes(n, 'big') + s.to_bytes(n, 'big')
         elif (isinstance(key, rsa.RSAPrivateKey)):
             signature = key.sign(self.__a.encode(), p, h)
         elif (isinstance(key, (ed25519.Ed25519PrivateKey, ed448.Ed448PrivateKey))):
@@ -218,7 +219,8 @@ class CVC:
                     Q = ASN1().decode(puk).find(0x86).data()
                     if (Q):
                         pubkey = ec.EllipticCurvePublicKey.from_encoded_point(curve, bytes(Q))
-                        pubkey.verify(utils.encode_dss_signature(int.from_bytes(signature[:len(signature)//2],'big'), int.from_bytes(signature[len(signature)//2:],'big')), body, ec.ECDSA(h))
+                        n = math.ceil(pubkey.curve.key_size / 8)
+                        pubkey.verify(utils.encode_dss_signature(int.from_bytes(signature[:n],'big'), int.from_bytes(signature[n:],'big')), body, ec.ECDSA(h))
                 else:
                     return False
         except InvalidSignature:
