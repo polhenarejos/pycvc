@@ -35,10 +35,8 @@ class Type:
             setattr(self, attr, kwargs.get(attr, 0))
 
     def to_bytes(self):
-        x = 0
         total = len(self._args)
-        for ix, attr in enumerate(self._args):
-            x = x + 2**(total-ix-1) * getattr(self, attr, 0)
+        x = self.fields()
         x = x + self.role * 2**(total)
         x |= self.__chat
         return x.to_bytes((total + 7) // 8, 'big')
@@ -57,6 +55,30 @@ class Type:
                 kwargs = {attr: (chat >> (nargs - ix - 1)) & 1 for ix, attr in enumerate(s._args)}
                 return s(chat >> nargs, **kwargs)
         raise Exception('Unknown type')
+
+    def fields_str(self):
+        fields = [bit for ix, bit in enumerate(self._args) if getattr(self, bit, 0) == 1]
+        return ", ".join(fields)
+
+    def fields(self):
+        nargs = len(self._args)
+        x = 0
+        for ix, attr in enumerate(self._args):
+            x = x + 2**(nargs-ix-1) * getattr(self, attr, 0)
+        return x
+
+    def role_str(self):
+        match self.role:
+            case Type.CVCA:
+                return 'CA'
+            case Type.DV_domestic:
+                return 'DV domestic'
+            case Type.DV_foreign:
+                return 'DV foreign'
+            case Type.Terminal:
+                return 'Terminal'
+            case _:
+                return 'Unknown type'
 
 class TypeIS(Type):
     OID = oid.ID_IS
