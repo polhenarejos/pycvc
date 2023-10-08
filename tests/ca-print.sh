@@ -1,7 +1,7 @@
 #/bin/bash -eu
 
 check_cert() {
-    e=$(cvc-print --print-bits -d certs $1)
+    e=$(cvc-print -d certs $1)
     grep -q "is VALID" <<< $e || (echo -e "${FAIL}" && exit 1)
     grep -q "Certificate VALID" <<< $e || (echo -e "${FAIL}" && exit 1)
 }

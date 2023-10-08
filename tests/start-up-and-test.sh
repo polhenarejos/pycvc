@@ -49,7 +49,7 @@ test_arg() {
     bytes=$((1<<(nargs-ix-1)))
     echo -n "Flag ${arg}... "
     cvc-create --role=terminal --type=$1 --days=60 --sign-key=ZZATDVCA00001.pkcs8 --sign-as=ZZATDVCA00001.cvcert --request=ZZATTERM00001.cvreq --${arg}
-    e=$(cvc-print --print-bits -d certs ZZATTERM00001.cvcert)
+    e=$(cvc-print -d certs ZZATTERM00001.cvcert)
     argr=${arg//-/_}
     chat=$(printf "%0${npad}X" ${bytes})
     grep -q "${argr}" <<< $e || (echo -e "${FAIL}" && exit 1)
