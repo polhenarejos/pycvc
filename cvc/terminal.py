@@ -68,17 +68,15 @@ class Type:
         return x
 
     def role_str(self):
-        match self.role:
-            case Type.CVCA:
-                return 'CA'
-            case Type.DV_domestic:
-                return 'DV domestic'
-            case Type.DV_foreign:
-                return 'DV foreign'
-            case Type.Terminal:
-                return 'Terminal'
-            case _:
-                return 'Unknown type'
+        if (self.role == Type.CVCA):
+            return 'CA'
+        elif (self.role == Type.DV_domestic):
+            return 'DV domestic'
+        elif (self.role == Type.DV_foreign):
+            return 'DV foreign'
+        elif (self.role == Type.Terminal):
+            return 'Terminal'
+        return 'Unknown type'
 
 class TypeIS(Type):
     OID = oid.ID_IS
