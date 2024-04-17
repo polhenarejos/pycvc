@@ -32,23 +32,30 @@ class EcCurve(dict):
     def from_name(name):
         for e in EcCurve.__subclasses__():
             if e.__name__.lower() == name.lower():
-                return e
+                return e()
+        return UnsupportedCurve
+
+    def __to_crypto(name):
+        name = name.lower()
+        if (name == 'curve25519'):
+            return ed25519.Ed25519PublicKey
+        elif (name == 'curve448'):
+            return ed448.Ed448PublicKey
+        for e in ec.EllipticCurve.__subclasses__():
+            if (e.__name__.lower() == name):
+                return e()
         return UnsupportedCurve
 
     def to_crypto(curve):
-        if (curve.__name__ == 'Curve25519'):
-            return ed25519.Ed25519PublicKey
-        elif (curve.__name__ == 'Curve448'):
-            return ed448.Ed448PublicKey
-        for e in ec.EllipticCurve.__subclasses__():
-            if (e.__name__.lower() == curve.__name__.lower()):
-                return e()
-        return UnsupportedCurve
+        return EcCurve.__to_crypto(curve.__name__)
+
+    def to_crypto(self):
+        return EcCurve.__to_crypto(self.__class__.__name__)
 
     def from_P(P):
         for e in EcCurve.__subclasses__():
             if e.P == P:
-                return e
+                return e()
         return UnsupportedCurve
 
 class UnsupportedCurve(EcCurve):
@@ -93,7 +100,6 @@ class SECP521R1(EcCurve):
     G = bytearray(unhexlify("0400C6858E06B70404E9CD9E3ECB662395B4429C648139053FB521F828AF606B4D3DBAA14B5E77EFE75928FE1DC127A2FFA8DE3348B3C1856A429BF97E7E31C2E5BD66011839296A789A3BC0045C8A5FB42C7D1BD998F54449579B446817AFBD17273E662C97EE72995EF42640C550B9013FAD0761353C7086A272C24088BE94769FD16650"))
     O = bytearray(unhexlify("01FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFA51868783BF2F966B7FCC0148F709A5D03BB5C9B8899C47AEBB6FB71E91386409"))
     F = bytearray(unhexlify("01"))
-
 
 class BrainpoolP192R1(EcCurve):
     P = bytearray(unhexlify("C302F41D932A36CDA7A3463093D18DB78FCE476DE1A86297"))

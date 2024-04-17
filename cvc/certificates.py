@@ -232,7 +232,7 @@ class CVC:
         try:
             P = CVC().decode(adata).pubkey().find(0x81) if outer is False else None
             if (P):
-                return EcCurve.to_crypto(EcCurve.from_P(P.data()))
+                return EcCurve.from_P(P.data()).to_crypto()
             depth = 10
             while (P == None and depth > 0):
                 car = CVC().decode(adata).outer_car()
@@ -243,7 +243,7 @@ class CVC:
                     adata = f.read()
                     P = CVC().decode(adata).pubkey().find(0x81)
                 if (P):
-                    return EcCurve.to_crypto(EcCurve.from_P(P.data()))
+                    return EcCurve.from_P(P.data()).to_crypto()
                 depth -= 1
         except FileNotFoundError:
             print(f'[Warning: File {car.decode()} not found]')
