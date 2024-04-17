@@ -28,7 +28,7 @@ For more information, execute `cvc-create` or `cvc-print` with `--help` flag.
 **Supported algorithms**
 - RSA
 - ECDSA
-- EDDSA
+- EdDSA
 
 **Supported curves**
 - secp192r1 (prime192v1)
@@ -55,6 +55,7 @@ For more information, execute `cvc-create` or `cvc-print` with `--help` flag.
 - RSA_PSS_SHA_1
 - RSA_PSS_SHA_256
 - RSA_PSS_SHA_512
+- EDDSA
 
 Here some examples.
 
