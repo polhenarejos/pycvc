@@ -139,6 +139,8 @@ ID_HTMLFORMAT               = ID_DESCRIPTION + b"\x02"
 ID_PDFFORMAT                = ID_DESCRIPTION + b"\x03"
 ID_SECTOR                   = ID_EXTENSIONS + b"\x02"
 ID_PS_SECTOR                = ID_EXTENSIONS + b"\x03"
+ID_PICOKEY                  = ID_EXTENSIONS + b"\x0A"
+ID_PICOKEY_SERIAL           = ID_PICOKEY + b"\x01"
 
 ID_AUXILIARY_TYPE           = BSI_DE + b"\x03\x01\x04"
 ID_DATEOFBIRTH              = ID_AUXILIARY_TYPE + b"\x01"
