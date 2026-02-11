@@ -185,7 +185,7 @@ class Ed25519(EcCurve):
     P = bytearray(unhexlify("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffed"))
     A = bytearray(unhexlify("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffec"))
     B = bytearray(unhexlify("52036cee2b6ffe738cc740797779e89800700a4d4141d8ab75eb4dca135978a3"))
-    G = bytearray(unhexlify("6666666666666666666666666666666666666666666666666666666666666658"))
+    G = bytearray(unhexlify("5866666666666666666666666666666666666666666666666666666666666666"))
     O = bytearray(unhexlify("1000000000000000000000000000000014def9dea2f79cd65812631a5cf5d3ed"))
     F = bytearray(unhexlify("08"))
 
@@ -193,6 +193,6 @@ class Ed448(EcCurve):
     P = bytearray(unhexlify("fffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffffffffffffffffffffffffffffffffffffffffffffffffffff"))
     A = bytearray(unhexlify("01"))
     B = bytearray(unhexlify("d78b4bdc7f0daf19f24f38c29373a2ccad46157242a50f37809b1da3412a12e79ccc9c81264cfe9ad080997058fb61c4243cc32dbaa156b9"))
-    G = bytearray(unhexlify("7fffffffffffffffffffffffffffffffffffffffffffffffffffffff80000000000000000000000000000000000000000000000000000001"))
+    G = bytearray(unhexlify("14fa30f25b790898adc8d74e2c13bdfdc4397ce61cffd33ad7c2a0051e9c78874098a36c7373ea4b62c7c9563720768824bcb66e71463f6900"))
     O = bytearray(unhexlify("3fffffffffffffffffffffffffffffffffffffffffffffffffffffff7cca23e9c44edb49aed63690216cc2728dc58f552378c292ab5844f3"))
     F = bytearray(unhexlify("04"))
